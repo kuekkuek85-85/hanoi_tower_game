@@ -16,7 +16,15 @@ export function useDragAndDrop(
   });
 
   const dragElementRef = useRef<HTMLElement | null>(null);
-  const isDraggingRef = useRef(false);
+  const dragInfoRef = useRef<{
+    isDragging: boolean;
+    draggedFrom: TowerName | null;
+    draggedDisk: number | null;
+  }>({
+    isDragging: false,
+    draggedFrom: null,
+    draggedDisk: null,
+  });
 
   const startDrag = useCallback((
     disk: number,
@@ -27,7 +35,13 @@ export function useDragAndDrop(
   ) => {
     console.log('드래그 시작 - 원판 설정:', disk, from);
     
-    isDraggingRef.current = true;
+    // ref와 state 모두 업데이트
+    dragInfoRef.current = {
+      isDragging: true,
+      draggedFrom: from,
+      draggedDisk: disk,
+    };
+    
     setDragState({
       isDragging: true,
       draggedDisk: disk,
@@ -55,7 +69,7 @@ export function useDragAndDrop(
   }, []);
 
   const updateDrag = useCallback((x: number, y: number) => {
-    if (!isDraggingRef.current || !dragElementRef.current) {
+    if (!dragInfoRef.current.isDragging || !dragElementRef.current) {
       console.log('드래그 업데이트 실패: 엘리먼트 없음');
       return;
     }
@@ -69,20 +83,18 @@ export function useDragAndDrop(
   }, []);
 
   const endDrag = useCallback((x: number, y: number): boolean => {
-    if (!isDraggingRef.current || !dragElementRef.current) {
-      console.log('드래그 종료 실패: 드래그 중이 아니거나 엘리먼트 없음');
+    if (!dragInfoRef.current.isDragging || !dragInfoRef.current.draggedFrom || !dragElementRef.current) {
+      console.log('드래그 종료 실패:', {
+        isDragging: dragInfoRef.current.isDragging,
+        draggedFrom: dragInfoRef.current.draggedFrom,
+        hasElement: !!dragElementRef.current
+      });
       return false;
     }
 
     console.log('드래그 종료:', x, y);
     const element = dragElementRef.current;
-    
-    // 현재 드래그 상태 가져오기
-    const currentDragState = dragState;
-    if (!currentDragState.draggedFrom) {
-      console.log('드래그 종료 실패: draggedFrom이 null');
-      return false;
-    }
+    const draggedFrom = dragInfoRef.current.draggedFrom;
     
     // 드롭 대상 찾기
     let dropTarget: TowerName | null = null;
@@ -98,12 +110,12 @@ export function useDragAndDrop(
 
     // 이동 가능성 체크 및 이동 시도
     let success = false;
-    if (dropTarget && dropTarget !== currentDragState.draggedFrom) {
-      console.log('이동 시도:', currentDragState.draggedFrom, '->', dropTarget);
-      success = onMove(currentDragState.draggedFrom, dropTarget);
+    if (dropTarget && dropTarget !== draggedFrom) {
+      console.log('이동 시도:', draggedFrom, '->', dropTarget);
+      success = onMove(draggedFrom, dropTarget);
       console.log('이동 결과:', success);
     } else {
-      console.log('유효하지 않은 드롭:', dropTarget, currentDragState.draggedFrom);
+      console.log('유효하지 않은 드롭:', dropTarget, draggedFrom);
     }
 
     // 원래 위치로 복구
@@ -117,7 +129,12 @@ export function useDragAndDrop(
     element.style.opacity = '';
 
     // 상태 초기화
-    isDraggingRef.current = false;
+    dragInfoRef.current = {
+      isDragging: false,
+      draggedFrom: null,
+      draggedDisk: null,
+    };
+    
     setDragState({
       isDragging: false,
       draggedDisk: null,
@@ -131,10 +148,10 @@ export function useDragAndDrop(
     dragElementRef.current = null;
     console.log('드래그 완료, 성공:', success);
     return success;
-  }, [dragState, onMove]);
+  }, [onMove]);
 
   const getHighlightedTower = useCallback((x: number, y: number): TowerName | null => {
-    if (!isDraggingRef.current || !dragState.draggedFrom) return null;
+    if (!dragInfoRef.current.isDragging || !dragInfoRef.current.draggedFrom) return null;
 
     const towers = document.querySelectorAll('[data-tower]');
     
@@ -143,14 +160,14 @@ export function useDragAndDrop(
       const rect = tower.getBoundingClientRect();
       if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
         const towerName = tower.getAttribute('data-tower') as TowerName;
-        if (canMove(dragState.draggedFrom, towerName)) {
+        if (canMove(dragInfoRef.current.draggedFrom, towerName)) {
           return towerName;
         }
       }
     }
 
     return null;
-  }, [dragState.draggedFrom, canMove]);
+  }, [canMove]);
 
   return {
     dragState,
