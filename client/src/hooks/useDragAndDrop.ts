@@ -96,17 +96,32 @@ export function useDragAndDrop(
     const element = dragElementRef.current;
     const draggedFrom = dragInfoRef.current.draggedFrom;
     
-    // 드롭 대상 찾기
+    // 드롭 대상 찾기 - 가장 가까운 기둥 중심점을 기준으로 판정
     let dropTarget: TowerName | null = null;
+    let minDistance = Infinity;
     const towers = document.querySelectorAll('[data-tower]');
     
     towers.forEach(tower => {
       const rect = tower.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+      
+      // 기둥 영역 안에 있고, 가장 가까운 기둥 찾기
       if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-        dropTarget = tower.getAttribute('data-tower') as TowerName;
-        console.log('드롭 대상 찾음:', dropTarget);
+        if (distance < minDistance) {
+          minDistance = distance;
+          dropTarget = tower.getAttribute('data-tower') as TowerName;
+          console.log('드롭 대상 후보:', dropTarget, '거리:', distance);
+        }
       }
     });
+    
+    if (dropTarget) {
+      console.log('최종 드롭 대상:', dropTarget);
+    } else {
+      console.log('드롭 대상 없음');
+    }
 
     // 이동 가능성 체크 및 이동 시도
     let success = false;
@@ -154,19 +169,28 @@ export function useDragAndDrop(
     if (!dragInfoRef.current.isDragging || !dragInfoRef.current.draggedFrom) return null;
 
     const towers = document.querySelectorAll('[data-tower]');
+    let closestTower: TowerName | null = null;
+    let minDistance = Infinity;
     
     for (let i = 0; i < towers.length; i++) {
       const tower = towers[i];
       const rect = tower.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+      
       if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-        const towerName = tower.getAttribute('data-tower') as TowerName;
-        if (canMove(dragInfoRef.current.draggedFrom, towerName)) {
-          return towerName;
+        if (distance < minDistance) {
+          minDistance = distance;
+          const towerName = tower.getAttribute('data-tower') as TowerName;
+          if (canMove(dragInfoRef.current.draggedFrom, towerName)) {
+            closestTower = towerName;
+          }
         }
       }
     }
 
-    return null;
+    return closestTower;
   }, [canMove]);
 
   return {
