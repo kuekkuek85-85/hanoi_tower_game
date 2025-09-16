@@ -57,6 +57,8 @@ export function GameScreen({ studentId, studentName, disks, onBackToStart }: Gam
       <WinModal
         isOpen={gameState.completed}
         gameStats={gameStats}
+        studentId={studentId}
+        studentName={studentName}
         onPlayAgain={handlePlayAgain}
         onBackToMenu={handleBackToStart}
       />

@@ -162,6 +162,7 @@ export function useHanoiGame() {
       timeElapsed: gameState.secondsElapsed,
       minMoves,
       efficiency,
+      disks: gameState.disks,
     };
   }, [gameState.moves, gameState.secondsElapsed, gameState.disks, calculateMinMoves]);
 

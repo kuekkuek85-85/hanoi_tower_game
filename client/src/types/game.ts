@@ -41,4 +41,5 @@ export interface GameStats {
   timeElapsed: number;
   minMoves: number;
   efficiency: number;
+  disks: number;
 }

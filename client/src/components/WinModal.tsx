@@ -3,22 +3,70 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trophy } from 'lucide-react';
 import { GameStats } from '@/types/game';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+import { type InsertHanoiRecord } from '@shared/schema';
 
 interface WinModalProps {
   isOpen: boolean;
   gameStats: GameStats;
+  studentId: string;
+  studentName: string;
   onPlayAgain: () => void;
   onBackToMenu: () => void;
 }
 
-export function WinModal({ isOpen, gameStats, onPlayAgain, onBackToMenu }: WinModalProps) {
+export function WinModal({ isOpen, gameStats, studentId, studentName, onPlayAgain, onBackToMenu }: WinModalProps) {
+  const { toast } = useToast();
+  const hasSaved = useRef(false);
+  
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+  
+  const saveGameResult = useMutation({
+    mutationFn: async (record: InsertHanoiRecord) => {
+      const response = await apiRequest('POST', '/api/records', record);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: '기록 저장 완료',
+        description: '게임 결과가 성공적으로 저장되었습니다.',
+      });
+    },
+    onError: () => {
+      toast({
+        title: '기록 저장 실패',
+        description: '게임 결과 저장 중 오류가 발생했습니다.',
+        variant: 'destructive',
+      });
+    },
+  });
 
+  // 게임 결과 자동 저장
+  useEffect(() => {
+    if (isOpen && !hasSaved.current) {
+      hasSaved.current = true;
+      const record: InsertHanoiRecord = {
+        studentId,
+        studentName,
+        disks: gameStats.disks,
+        moves: gameStats.moves,
+        seconds: gameStats.timeElapsed,
+      };
+      saveGameResult.mutate(record);
+    }
+    
+    if (!isOpen) {
+      hasSaved.current = false;
+    }
+  }, [isOpen, studentId, studentName, gameStats, saveGameResult]);
+  
   // 축하 효과
   useEffect(() => {
     if (!isOpen) return;

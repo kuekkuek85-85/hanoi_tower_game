@@ -1,5 +1,7 @@
-import { type User, type InsertUser, type HanoiRecord, type InsertHanoiRecord } from "@shared/schema";
+import { type User, type InsertUser, type HanoiRecord, type InsertHanoiRecord, users, hanoiRecords } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq, desc, or, ilike } from "drizzle-orm";
 
 // modify the interface with any CRUD methods
 // you might need
@@ -79,4 +81,67 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// DatabaseStorage 구현
+export class DatabaseStorage implements IStorage {
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
+  }
+
+  async createHanoiRecord(insertRecord: InsertHanoiRecord): Promise<HanoiRecord> {
+    const [record] = await db
+      .insert(hanoiRecords)
+      .values(insertRecord)
+      .returning();
+    return record;
+  }
+
+  async getHanoiRecords(limit = 50): Promise<HanoiRecord[]> {
+    const records = await db
+      .select()
+      .from(hanoiRecords)
+      .orderBy(desc(hanoiRecords.createdAt))
+      .limit(limit);
+    return records;
+  }
+
+  async searchHanoiRecords(query: string): Promise<HanoiRecord[]> {
+    const records = await db
+      .select()
+      .from(hanoiRecords)
+      .where(
+        or(
+          ilike(hanoiRecords.studentId, `%${query}%`),
+          ilike(hanoiRecords.studentName, `%${query}%`)
+        )
+      )
+      .orderBy(desc(hanoiRecords.createdAt));
+    return records;
+  }
+
+  async getHanoiRecordsByDisks(disks: number, limit = 50): Promise<HanoiRecord[]> {
+    const records = await db
+      .select()
+      .from(hanoiRecords)
+      .where(eq(hanoiRecords.disks, disks))
+      .orderBy(hanoiRecords.moves, hanoiRecords.seconds)
+      .limit(limit);
+    return records;
+  }
+}
+
+// 프로덕션에서는 DatabaseStorage 사용, 개발 중에는 MemStorage도 가능
+export const storage = new DatabaseStorage();
