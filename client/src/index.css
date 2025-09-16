@@ -373,3 +373,318 @@
   border-radius: 4px;
   font-weight: 600;
 }
+
+/* 모바일 반응형 디자인 */
+
+/* 작은 스마트폰 (360px 이하) */
+@media (max-width: 360px) {
+  .game-board {
+    padding: 1rem 0.5rem;
+  }
+  
+  .towers-container {
+    gap: 1rem;
+    padding: 1rem 0.5rem;
+    max-width: 100%;
+  }
+  
+  .tower {
+    width: 90px;
+    min-height: 200px;
+    margin: 0 0.25rem;
+    padding: 8px;
+  }
+  
+  .tower::after {
+    height: 180px;
+    width: 4px;
+  }
+  
+  .disk {
+    height: 16px;
+    border-radius: 4px;
+  }
+  
+  .tower h3 {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* 스마트폰 세로 모드 */
+@media (max-width: 480px) and (orientation: portrait) {
+  .game-board {
+    padding: 1rem;
+  }
+  
+  .towers-container {
+    gap: 1.5rem;
+    padding: 1.5rem 0.5rem;
+  }
+  
+  .tower {
+    width: 100px;
+    min-height: 250px;
+    margin: 0 0.5rem;
+    padding: 10px;
+  }
+  
+  .tower::after {
+    height: 220px;
+    width: 4px;
+  }
+  
+  .tower::before {
+    width: 70%;
+    height: 6px;
+  }
+  
+  .disk {
+    height: 18px;
+    border-radius: 6px;
+  }
+  
+  .tower h3 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* 스마트폰 가로 모드 */
+@media (max-width: 768px) and (orientation: landscape) {
+  .game-board {
+    padding: 0.5rem;
+  }
+  
+  .towers-container {
+    gap: 2rem;
+    padding: 1rem;
+  }
+  
+  .tower {
+    width: 120px;
+    min-height: 180px;
+    margin: 0 0.5rem;
+    padding: 10px;
+  }
+  
+  .tower::after {
+    height: 150px;
+    width: 5px;
+  }
+  
+  .disk {
+    height: 16px;
+    border-radius: 6px;
+  }
+  
+  .tower h3 {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* 태블릿 세로 모드 */
+@media (min-width: 481px) and (max-width: 768px) and (orientation: portrait) {
+  .game-board {
+    padding: 1.5rem;
+  }
+  
+  .towers-container {
+    gap: 2.5rem;
+    padding: 2rem 1rem;
+  }
+  
+  .tower {
+    width: 140px;
+    min-height: 300px;
+    margin: 0 0.75rem;
+    padding: 12px;
+  }
+  
+  .tower::after {
+    height: 270px;
+    width: 5px;
+  }
+  
+  .disk {
+    height: 20px;
+    border-radius: 7px;
+  }
+  
+  .tower h3 {
+    font-size: 1.125rem;
+    margin-bottom: 1rem;
+  }
+}
+
+/* 태블릿 가로 모드 */
+@media (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
+  .game-board {
+    padding: 1.5rem;
+  }
+  
+  .towers-container {
+    gap: 3rem;
+    padding: 2rem 1rem;
+  }
+  
+  .tower {
+    width: 180px;
+    min-height: 320px;
+    margin: 0 0.75rem;
+    padding: 13px;
+  }
+  
+  .tower::after {
+    height: 290px;
+    width: 5px;
+  }
+  
+  .disk {
+    height: 22px;
+    border-radius: 8px;
+  }
+  
+  .tower h3 {
+    font-size: 1.125rem;
+  }
+}
+
+/* 작은 태블릿 및 중간 화면 */
+@media (min-width: 481px) and (max-width: 1024px) {
+  .towers-container {
+    max-width: 100%;
+  }
+}
+
+/* 타워 래퍼 및 레이블 모바일 최적화 */
+.tower-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tower-label {
+  user-select: none;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* 모바일에서 타워 레이블 크기 조정 */
+@media (max-width: 480px) {
+  .tower-label {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* 터치 디바이스 최적화 - 더 큰 터치 영역 */
+@media (hover: none) and (pointer: coarse) {
+  .disk {
+    padding: 3px 0;
+    margin: 3px auto;
+    min-height: 22px;
+    cursor: pointer;
+    touch-action: none;
+  }
+  
+  .tower {
+    padding: 18px;
+    touch-action: none;
+  }
+  
+  .tower-wrapper {
+    padding: 0.5rem;
+  }
+  
+  /* 터치 영역 확대 */
+  .disk[data-size="1"], 
+  .disk[data-size="2"], 
+  .disk[data-size="3"] {
+    min-height: 24px;
+    padding: 4px 0;
+  }
+  
+  /* 작은 화면에서는 조금 더 작게 */
+  @media (max-width: 480px) {
+    .disk {
+      min-height: 20px;
+      padding: 2px 0;
+      margin: 2px auto;
+    }
+    
+    .disk[data-size="1"], 
+    .disk[data-size="2"], 
+    .disk[data-size="3"] {
+      min-height: 22px;
+      padding: 3px 0;
+    }
+    
+    .tower {
+      padding: 12px;
+    }
+  }
+  
+  /* 매우 작은 화면 */
+  @media (max-width: 360px) {
+    .disk {
+      min-height: 18px;
+      padding: 1px 0;
+      margin: 1px auto;
+    }
+    
+    .disk[data-size="1"], 
+    .disk[data-size="2"], 
+    .disk[data-size="3"] {
+      min-height: 20px;
+      padding: 2px 0;
+    }
+    
+    .tower {
+      padding: 10px;
+    }
+  }
+}
+
+/* 드래그 중인 원판의 모바일 최적화 */
+@media (hover: none) and (pointer: coarse) {
+  .dragging-disk {
+    transform: scale(1.1);
+    filter: brightness(1.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  
+  .disk.dragging {
+    transform: scale(1.1) rotate(1deg);
+    z-index: 1000;
+    opacity: 0.95;
+  }
+}
+
+/* 세로 모드에서 더 컴팩트한 레이아웃 */
+@media (max-width: 480px) and (orientation: portrait) {
+  .tower-wrapper {
+    margin-bottom: 0.5rem;
+  }
+  
+  .towers-container {
+    justify-content: space-around;
+  }
+}
+
+/* 가로 모드에서 화면 공간 활용 최적화 */
+@media (max-width: 768px) and (orientation: landscape) {
+  .game-board {
+    padding: 0.5rem 1rem;
+  }
+  
+  .tower-label {
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .towers-container {
+    gap: 1.5rem;
+    padding: 0.5rem;
+  }
+}

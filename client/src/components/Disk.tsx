@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { TowerName } from '@/types/game';
 
 interface DiskProps {
@@ -10,6 +10,24 @@ interface DiskProps {
 
 export function Disk({ size, tower, isTop, onDragStart }: DiskProps) {
   const diskRef = useRef<HTMLDivElement>(null);
+  const [diskWidth, setDiskWidth] = useState<string>('50px');
+  
+  // 화면 크기 변경 감지하여 원판 크기 업데이트
+  useEffect(() => {
+    const updateDiskWidth = () => {
+      setDiskWidth(getDiskWidth(size));
+    };
+    
+    updateDiskWidth(); // 초기 설정
+    
+    window.addEventListener('resize', updateDiskWidth);
+    window.addEventListener('orientationchange', updateDiskWidth);
+    
+    return () => {
+      window.removeEventListener('resize', updateDiskWidth);
+      window.removeEventListener('orientationchange', updateDiskWidth);
+    };
+  }, [size]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!isTop || !diskRef.current) return;
@@ -51,8 +69,38 @@ export function Disk({ size, tower, isTop, onDragStart }: DiskProps) {
   };
 
   const getDiskWidth = (size: number): string => {
-    const baseWidth = 50;
-    const increment = 16;
+    // 화면 크기에 따른 반응형 크기 계산
+    const screenWidth = window.innerWidth;
+    
+    let baseWidth: number;
+    let increment: number;
+    
+    if (screenWidth <= 360) {
+      // 작은 스마트폰
+      baseWidth = 30;
+      increment = 8;
+    } else if (screenWidth <= 480) {
+      // 스마트폰 세로 모드
+      baseWidth = 35;
+      increment = 10;
+    } else if (screenWidth <= 768 && window.matchMedia('(orientation: landscape)').matches) {
+      // 스마트폰 가로 모드
+      baseWidth = 40;
+      increment = 12;
+    } else if (screenWidth <= 768) {
+      // 태블릿 세로 모드
+      baseWidth = 45;
+      increment = 13;
+    } else if (screenWidth <= 1024) {
+      // 태블릿 가로 모드
+      baseWidth = 55;
+      increment = 15;
+    } else {
+      // 데스크톱
+      baseWidth = 50;
+      increment = 16;
+    }
+    
     return `${baseWidth + (size - 1) * increment}px`;
   };
 
@@ -63,7 +111,7 @@ export function Disk({ size, tower, isTop, onDragStart }: DiskProps) {
         disk disk-${size} bg-gradient-to-r ${getDiskColor(size)} 
         ${isTop ? 'cursor-grab active:cursor-grabbing' : 'cursor-not-allowed'}
       `}
-      style={{ width: getDiskWidth(size) }}
+      style={{ width: diskWidth }}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
       data-testid={`disk-${size}-${tower}`}

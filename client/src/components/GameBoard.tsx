@@ -56,6 +56,7 @@ export function GameBoard({ towers, onMove, canMove }: GameBoardProps) {
     
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches.length > 0) {
+        e.preventDefault(); // 페이지 스크롤 방지
         const touch = e.touches[0];
         console.log('터치 이동:', touch.clientX, touch.clientY);
         updateDrag(touch.clientX, touch.clientY);

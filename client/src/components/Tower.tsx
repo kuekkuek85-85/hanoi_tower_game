@@ -17,8 +17,8 @@ export function Tower({ name, disks, isHighlighted, isInvalid, onDragStart }: To
   };
 
   return (
-    <div className="text-center">
-      <h3 className="text-white font-bold mb-2 text-lg" data-testid={`text-tower-${name}`}>
+    <div className="text-center tower-wrapper">
+      <h3 className="text-white font-bold mb-2 text-lg tower-label" data-testid={`text-tower-${name}`}>
         {towerLabels[name]}
       </h3>
       <div 
