@@ -1,16 +1,18 @@
 import { useState } from 'react';
+import { useLocation } from 'wouter';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Info } from 'lucide-react';
+import { Info, Trophy } from 'lucide-react';
 
 interface StartScreenProps {
   onStartGame: (studentId: string, studentName: string, disks: number) => void;
 }
 
 export function StartScreen({ onStartGame }: StartScreenProps) {
+  const [, setLocation] = useLocation();
   const [studentInfo, setStudentInfo] = useState('');
   const [diskCount, setDiskCount] = useState([3]);
   const [error, setError] = useState('');
@@ -127,6 +129,18 @@ export function StartScreen({ onStartGame }: StartScreenProps) {
               data-testid="button-start-game"
             >
               게임 시작
+            </Button>
+
+            {/* 명예의 전당 버튼 */}
+            <Button
+              onClick={() => setLocation('/leaderboard')}
+              variant="outline"
+              className="w-full"
+              size="lg"
+              data-testid="button-leaderboard"
+            >
+              <Trophy className="mr-2 h-4 w-4" />
+              명예의 전당
             </Button>
           </div>
         </CardContent>
