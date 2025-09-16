@@ -24,6 +24,8 @@ export function useDragAndDrop(
     y: number,
     element: HTMLElement
   ) => {
+    console.log('드래그 시작 - 원판 설정:', disk, from);
+    
     setDragState({
       isDragging: true,
       draggedDisk: disk,
@@ -35,28 +37,43 @@ export function useDragAndDrop(
     });
 
     dragElementRef.current = element;
+    
+    // 원판을 드래그 가능하게 만들기
+    const rect = element.getBoundingClientRect();
     element.style.position = 'fixed';
+    element.style.left = `${x - rect.width / 2}px`;
+    element.style.top = `${y - rect.height / 2}px`;
     element.style.zIndex = '1000';
     element.style.pointerEvents = 'none';
     element.style.transform = 'scale(1.05) rotate(2deg)';
     element.style.transition = 'none';
+    element.style.opacity = '0.9';
+    
+    console.log('원판 스타일 설정 완료');
   }, []);
 
   const updateDrag = useCallback((x: number, y: number) => {
-    if (!dragState.isDragging || !dragElementRef.current) return;
+    if (!dragElementRef.current) {
+      console.log('드래그 업데이트 실패: 엘리먼트 없음');
+      return;
+    }
 
+    console.log('드래그 위치 업데이트:', x, y);
     setDragState(prev => ({ ...prev, currentX: x, currentY: y }));
     
     const element = dragElementRef.current;
-    element.style.left = `${x - element.offsetWidth / 2}px`;
-    element.style.top = `${y - element.offsetHeight / 2}px`;
-  }, [dragState.isDragging]);
+    const rect = element.getBoundingClientRect();
+    element.style.left = `${x - rect.width / 2}px`;
+    element.style.top = `${y - rect.height / 2}px`;
+  }, []);
 
   const endDrag = useCallback((x: number, y: number): boolean => {
     if (!dragState.isDragging || !dragState.draggedFrom || !dragElementRef.current) {
+      console.log('드래그 종료 실패:', dragState.isDragging, dragState.draggedFrom, !!dragElementRef.current);
       return false;
     }
 
+    console.log('드래그 종료:', x, y);
     const element = dragElementRef.current;
     
     // 드롭 대상 찾기
@@ -67,6 +84,7 @@ export function useDragAndDrop(
       const rect = tower.getBoundingClientRect();
       if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
         dropTarget = tower.getAttribute('data-tower') as TowerName;
+        console.log('드롭 대상 찾음:', dropTarget);
       }
     });
 
@@ -78,6 +96,7 @@ export function useDragAndDrop(
     element.style.transition = '';
     element.style.left = '';
     element.style.top = '';
+    element.style.opacity = '';
 
     const success = dropTarget && dropTarget !== dragState.draggedFrom 
       ? onMove(dragState.draggedFrom, dropTarget)
@@ -94,6 +113,7 @@ export function useDragAndDrop(
     });
 
     dragElementRef.current = null;
+    console.log('드래그 완료, 성공:', success);
     return success;
   }, [dragState.isDragging, dragState.draggedFrom, onMove]);
 
