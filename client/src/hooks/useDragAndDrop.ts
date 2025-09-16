@@ -70,7 +70,6 @@ export function useDragAndDrop(
 
   const updateDrag = useCallback((x: number, y: number) => {
     if (!dragInfoRef.current.isDragging || !dragElementRef.current) {
-      console.log('드래그 업데이트 실패: 엘리먼트 없음');
       return;
     }
 
@@ -92,45 +91,56 @@ export function useDragAndDrop(
       return false;
     }
 
-    console.log('드래그 종료:', x, y);
+    console.log('드래그 종료 위치:', x, y);
     const element = dragElementRef.current;
     const draggedFrom = dragInfoRef.current.draggedFrom;
     
-    // 드롭 대상 찾기 - 가장 가까운 기둥 중심점을 기준으로 판정
+    // 드롭 대상 찾기 - 간단하고 명확한 방식
     let dropTarget: TowerName | null = null;
-    let minDistance = Infinity;
+    let bestMatch: { tower: TowerName; score: number } | null = null;
+    
     const towers = document.querySelectorAll('[data-tower]');
     
+    console.log('기둥별 위치 확인:');
     towers.forEach(tower => {
       const rect = tower.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+      const towerName = tower.getAttribute('data-tower') as TowerName;
       
-      // 기둥 영역 안에 있고, 가장 가까운 기둥 찾기
+      console.log(`기둥 ${towerName}: 영역 (${rect.left}-${rect.right}, ${rect.top}-${rect.bottom})`);
+      
+      // 기둥 영역 안에 있는지 확인
       if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-        if (distance < minDistance) {
-          minDistance = distance;
-          dropTarget = tower.getAttribute('data-tower') as TowerName;
-          console.log('드롭 대상 후보:', dropTarget, '거리:', distance);
+        // 기둥 중심에서의 거리로 점수 계산 (가까울수록 높은 점수)
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+        const score = 1000 - distance; // 거리가 가까울수록 높은 점수
+        
+        console.log(`기둥 ${towerName} 감지됨 - 거리: ${distance.toFixed(1)}, 점수: ${score.toFixed(1)}`);
+        
+        if (!bestMatch || score > bestMatch.score) {
+          bestMatch = { tower: towerName, score };
         }
       }
     });
     
-    if (dropTarget) {
-      console.log('최종 드롭 대상:', dropTarget);
+    if (bestMatch) {
+      dropTarget = bestMatch.tower;
+      console.log(`최종 선택된 기둥: ${dropTarget} (점수: ${bestMatch.score.toFixed(1)})`);
     } else {
-      console.log('드롭 대상 없음');
+      console.log('어떤 기둥 영역에도 해당하지 않음');
     }
 
     // 이동 가능성 체크 및 이동 시도
     let success = false;
     if (dropTarget && dropTarget !== draggedFrom) {
-      console.log('이동 시도:', draggedFrom, '->', dropTarget);
+      console.log(`이동 시도: ${draggedFrom} -> ${dropTarget}`);
       success = onMove(draggedFrom, dropTarget);
-      console.log('이동 결과:', success);
+      console.log(`이동 결과: ${success}`);
+    } else if (dropTarget === draggedFrom) {
+      console.log(`같은 기둥으로의 드롭 시도: ${dropTarget}`);
     } else {
-      console.log('유효하지 않은 드롭:', dropTarget, draggedFrom);
+      console.log('유효한 드롭 대상 없음');
     }
 
     // 원래 위치로 복구
@@ -169,28 +179,28 @@ export function useDragAndDrop(
     if (!dragInfoRef.current.isDragging || !dragInfoRef.current.draggedFrom) return null;
 
     const towers = document.querySelectorAll('[data-tower]');
-    let closestTower: TowerName | null = null;
-    let minDistance = Infinity;
+    let bestMatch: { tower: TowerName; score: number } | null = null;
     
     for (let i = 0; i < towers.length; i++) {
       const tower = towers[i];
       const rect = tower.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
       
       if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-        if (distance < minDistance) {
-          minDistance = distance;
-          const towerName = tower.getAttribute('data-tower') as TowerName;
-          if (canMove(dragInfoRef.current.draggedFrom, towerName)) {
-            closestTower = towerName;
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+        const score = 1000 - distance;
+        
+        const towerName = tower.getAttribute('data-tower') as TowerName;
+        if (canMove(dragInfoRef.current.draggedFrom, towerName)) {
+          if (!bestMatch || score > bestMatch.score) {
+            bestMatch = { tower: towerName, score };
           }
         }
       }
     }
 
-    return closestTower;
+    return bestMatch ? bestMatch.tower : null;
   }, [canMove]);
 
   return {
