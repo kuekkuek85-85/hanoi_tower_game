@@ -37,27 +37,6 @@ export function GameBoard({ towers, onMove, canMove }: GameBoardProps) {
     getHighlightedTower,
   } = useDragAndDrop(handleMove, canMove);
 
-  const handlePointerMove = useCallback((e: PointerEvent) => {
-    if (!dragState.isDragging) return;
-    
-    const x = e.clientX;
-    const y = e.clientY;
-    updateDrag(x, y);
-    setHighlightedTower(getHighlightedTower(x, y));
-  }, [dragState.isDragging, updateDrag, getHighlightedTower]);
-
-  const handlePointerUp = useCallback((e: PointerEvent) => {
-    if (!dragState.isDragging) return;
-    
-    const x = e.clientX;
-    const y = e.clientY;
-    endDrag(x, y);
-    setHighlightedTower(null);
-    
-    document.removeEventListener('pointermove', handlePointerMove);
-    document.removeEventListener('pointerup', handlePointerUp);
-  }, [dragState.isDragging, endDrag, handlePointerMove]);
-
   const handleDragStart = useCallback((
     disk: number,
     tower: TowerName,
@@ -68,9 +47,26 @@ export function GameBoard({ towers, onMove, canMove }: GameBoardProps) {
     startDrag(disk, tower, x, y, element);
     setHighlightedTower(null);
     
+    const handlePointerMove = (e: PointerEvent) => {
+      const x = e.clientX;
+      const y = e.clientY;
+      updateDrag(x, y);
+      setHighlightedTower(getHighlightedTower(x, y));
+    };
+    
+    const handlePointerUp = (e: PointerEvent) => {
+      const x = e.clientX;
+      const y = e.clientY;
+      endDrag(x, y);
+      setHighlightedTower(null);
+      
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+    };
+    
     document.addEventListener('pointermove', handlePointerMove);
     document.addEventListener('pointerup', handlePointerUp);
-  }, [startDrag, handlePointerMove, handlePointerUp]);
+  }, [startDrag, updateDrag, endDrag, getHighlightedTower]);
 
   return (
     <div className="game-board" role="application" aria-label="하노이타워 게임">
