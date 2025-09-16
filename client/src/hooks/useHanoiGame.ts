@@ -100,7 +100,12 @@ export function useHanoiGame() {
     if (!canMoveDisk(from, to, gameState.towers)) return false;
 
     setGameState(prev => {
-      const newTowers = { ...prev.towers };
+      // 완전한 불변성 보장을 위해 타워 배열을 깊게 복제
+      const newTowers: TowerState = {
+        A: [...prev.towers.A],
+        B: [...prev.towers.B],
+        C: [...prev.towers.C]
+      };
       const disk = newTowers[from].pop()!;
       newTowers[to].push(disk);
 
@@ -131,17 +136,23 @@ export function useHanoiGame() {
   }, [gameState.isGameActive, gameState.completed, gameState.towers, canMoveDisk]);
 
   // 되돌리기
-  const undoMove = useCallback(() => {
-    if (gameState.history.length === 0 || !gameState.isGameActive) return;
+  const undoMove = useCallback((): boolean => {
+    if (gameState.history.length === 0) return false;
 
     setGameState(prev => {
       const lastMove = prev.history[prev.history.length - 1];
-      const newTowers = { ...prev.towers };
+      // 완전한 불변성 보장을 위해 타워 배열을 깊게 복제
+      const newTowers: TowerState = {
+        A: [...prev.towers.A],
+        B: [...prev.towers.B],
+        C: [...prev.towers.C]
+      };
       
       const disk = newTowers[lastMove.to].pop()!;
       newTowers[lastMove.from].push(disk);
 
-      return {
+      const wasCompleted = prev.completed;
+      const newState = {
         ...prev,
         towers: newTowers,
         moves: Math.max(0, prev.moves - 1),
@@ -149,8 +160,17 @@ export function useHanoiGame() {
         completed: false,
         isGameActive: true,
       };
+
+      // 게임이 완료된 상태에서 되돌리기를 하면 타이머 재시작
+      if (wasCompleted) {
+        setTimeout(() => startTimer(), 0);
+      }
+
+      return newState;
     });
-  }, [gameState.history.length, gameState.isGameActive]);
+    
+    return true;
+  }, [gameState.history.length, startTimer]);
 
   // 게임 통계 계산
   const getGameStats = useCallback((): GameStats => {
