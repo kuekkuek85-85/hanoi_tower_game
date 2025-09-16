@@ -83,6 +83,7 @@ export function GameScreen({ studentId, studentName, disks, onBackToStart }: Gam
         towers={gameState.towers}
         onMove={moveDisk}
         canMove={(from, to) => canMoveDisk(from, to, gameState.towers)}
+        isGameActive={gameState.isGameActive}
       />
 
       <WinModal

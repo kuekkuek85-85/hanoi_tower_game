@@ -43,3 +43,30 @@ export interface GameStats {
   efficiency: number;
   disks: number;
 }
+
+export interface AccessibilityState {
+  isKeyboardMode: boolean;
+  selectedDisk: number | null;
+  selectedTower: TowerName | null;
+  focusedTower: TowerName | null;
+  announcements: string[];
+  reducedMotion: boolean;
+  highContrast: boolean;
+}
+
+export interface KeyboardNavigationState {
+  currentFocus: 'disk' | 'tower' | null;
+  selectedDisk: number | null;
+  selectedTower: TowerName | null;
+  targetTower: TowerName | null;
+  focusedTower: TowerName | null;
+  isSelectingTarget: boolean;
+}
+
+export interface AccessibilitySettings {
+  keyboardMode: boolean;
+  reducedMotion: boolean;
+  highContrast: boolean;
+  announcements: boolean;
+  soundEffects: boolean;
+}

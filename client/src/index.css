@@ -223,3 +223,127 @@
     animation: none;
   }
 }
+
+/* 키보드 포커스 스타일 */
+.focus-visible, 
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 키보드 모드 전용 스타일 */
+.accessibility-keyboard-mode .disk:focus,
+.accessibility-keyboard-mode .keyboard-interactive:focus {
+  outline: 3px solid hsl(var(--accent));
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px hsl(var(--background)), 0 0 0 4px hsl(var(--accent));
+}
+
+.accessibility-keyboard-mode .tower-keyboard-focused {
+  background: rgba(76, 175, 80, 0.15);
+  border: 2px solid #4CAF50;
+  box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px #4CAF50;
+}
+
+.accessibility-keyboard-mode .tower-focused h3 {
+  color: #4CAF50;
+  text-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+}
+
+/* 선택된 디스크 스타일 */
+.disk-selected {
+  outline: 3px solid hsl(var(--accent));
+  outline-offset: 3px;
+  box-shadow: 0 0 0 1px hsl(var(--background)), 0 0 0 6px hsl(var(--accent)), 0 4px 16px rgba(0, 0, 0, 0.25);
+  transform: translateY(-4px) scale(1.05);
+  z-index: 100;
+}
+
+.disk-focused {
+  box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
+}
+
+/* 빈 타워 표시기 */
+.empty-tower-indicator {
+  width: 60px;
+  height: 30px;
+  border: 2px dashed hsl(var(--muted-foreground));
+  border-radius: 8px;
+  margin: 2px auto;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.accessibility-keyboard-mode .empty-tower-indicator {
+  opacity: 1;
+  border-color: hsl(var(--accent));
+}
+
+/* 고대비 모드 */
+.accessibility-high-contrast {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(0, 0%, 0%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(0, 0%, 0%);
+  --primary: hsl(240, 100%, 50%);
+  --secondary: hsl(0, 0%, 95%);
+  --accent: hsl(60, 100%, 50%);
+  --border: hsl(0, 0%, 0%);
+  --ring: hsl(240, 100%, 50%);
+}
+
+.accessibility-high-contrast .disk {
+  border: 2px solid hsl(0, 0%, 0%);
+  box-shadow: none;
+}
+
+.accessibility-high-contrast .tower {
+  border: 2px solid hsl(0, 0%, 0%);
+  background: hsl(0, 0%, 98%);
+}
+
+/* 스크린리더 전용 텍스트 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 키보드 모드 애니메이션 */
+@keyframes focus-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring)); }
+  50% { box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 6px hsl(var(--ring)); }
+}
+
+.accessibility-keyboard-mode .keyboard-interactive:focus {
+  animation: focus-pulse 2s infinite;
+}
+
+/* 접근성 모드에서 불필요한 호버 효과 제거 */
+.accessibility-keyboard-mode .disk:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 고대비 모드 토글 버튼 시각적 구분 */
+.accessibility-high-contrast button[aria-pressed="true"] {
+  background: hsl(0, 0%, 0%);
+  color: hsl(0, 0%, 100%);
+  border: 2px solid hsl(0, 0%, 0%);
+}
+
+/* 키보드 도움말 강조 */
+.keyboard-help-highlight {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-weight: 600;
+}
