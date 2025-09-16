@@ -44,28 +44,53 @@ export function GameBoard({ towers, onMove, canMove }: GameBoardProps) {
     y: number,
     element: HTMLElement
   ) => {
+    console.log('드래그 시작:', disk, tower, x, y);
     startDrag(disk, tower, x, y, element);
     setHighlightedTower(null);
     
-    const handlePointerMove = (e: PointerEvent) => {
-      const x = e.clientX;
-      const y = e.clientY;
-      updateDrag(x, y);
-      setHighlightedTower(getHighlightedTower(x, y));
+    const handleMouseMove = (e: MouseEvent) => {
+      console.log('마우스 이동:', e.clientX, e.clientY);
+      updateDrag(e.clientX, e.clientY);
+      setHighlightedTower(getHighlightedTower(e.clientX, e.clientY));
     };
     
-    const handlePointerUp = (e: PointerEvent) => {
-      const x = e.clientX;
-      const y = e.clientY;
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        console.log('터치 이동:', touch.clientX, touch.clientY);
+        updateDrag(touch.clientX, touch.clientY);
+        setHighlightedTower(getHighlightedTower(touch.clientX, touch.clientY));
+      }
+    };
+    
+    const handleEnd = (e: MouseEvent | TouchEvent) => {
+      let x, y;
+      if (e instanceof MouseEvent) {
+        x = e.clientX;
+        y = e.clientY;
+        console.log('마우스 끝:', x, y);
+      } else if (e.changedTouches && e.changedTouches.length > 0) {
+        const touch = e.changedTouches[0];
+        x = touch.clientX;
+        y = touch.clientY;
+        console.log('터치 끝:', x, y);
+      } else {
+        return;
+      }
+      
       endDrag(x, y);
       setHighlightedTower(null);
       
-      document.removeEventListener('pointermove', handlePointerMove);
-      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleEnd);
     };
     
-    document.addEventListener('pointermove', handlePointerMove);
-    document.addEventListener('pointerup', handlePointerUp);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleEnd);
   }, [startDrag, updateDrag, endDrag, getHighlightedTower]);
 
   return (

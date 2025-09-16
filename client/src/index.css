@@ -117,12 +117,14 @@
 
 .disk {
   border-radius: 8px;
-  height: 30px;
-  margin: 2px auto;
+  height: 24px;
+  margin: 1px auto;
   user-select: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   position: relative;
+  touch-action: none;
+  z-index: 1;
 }
 
 .disk:hover {
@@ -138,8 +140,8 @@
 }
 
 .tower {
-  min-height: 320px;
-  width: 200px;
+  min-height: 400px;
+  width: 220px;
   display: flex;
   flex-direction: column-reverse;
   align-items: center;
@@ -147,7 +149,7 @@
   position: relative;
   background: linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.1) 100%);
   border-radius: 12px;
-  padding: 20px;
+  padding: 15px;
   margin: 0 1rem;
 }
 
@@ -160,6 +162,7 @@
   background: #8B4513;
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  pointer-events: none;
 }
 
 .tower::after {
@@ -169,10 +172,11 @@
   left: 50%;
   transform: translateX(-50%);
   width: 6px;
-  height: 280px;
+  height: 350px;
   background: linear-gradient(to bottom, #8B4513, #A0522D);
   border-radius: 3px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  pointer-events: none;
 }
 
 .tower.highlight {

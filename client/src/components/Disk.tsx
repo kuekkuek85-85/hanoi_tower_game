@@ -11,12 +11,25 @@ interface DiskProps {
 export function Disk({ size, tower, isTop, onDragStart }: DiskProps) {
   const diskRef = useRef<HTMLDivElement>(null);
 
-  const handlePointerDown = (e: React.PointerEvent) => {
+  const handleMouseDown = (e: React.MouseEvent) => {
     if (!isTop || !diskRef.current) return;
     
     e.preventDefault();
+    e.stopPropagation();
     const x = e.clientX;
     const y = e.clientY;
+    
+    onDragStart(size, tower, x, y, diskRef.current);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isTop || !diskRef.current) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    const touch = e.touches[0];
+    const x = touch.clientX;
+    const y = touch.clientY;
     
     onDragStart(size, tower, x, y, diskRef.current);
   };
@@ -38,8 +51,8 @@ export function Disk({ size, tower, isTop, onDragStart }: DiskProps) {
   };
 
   const getDiskWidth = (size: number): string => {
-    const baseWidth = 60;
-    const increment = 20;
+    const baseWidth = 50;
+    const increment = 16;
     return `${baseWidth + (size - 1) * increment}px`;
   };
 
@@ -48,10 +61,11 @@ export function Disk({ size, tower, isTop, onDragStart }: DiskProps) {
       ref={diskRef}
       className={`
         disk disk-${size} bg-gradient-to-r ${getDiskColor(size)} 
-        ${isTop ? 'cursor-grab' : 'cursor-not-allowed'}
+        ${isTop ? 'cursor-grab active:cursor-grabbing' : 'cursor-not-allowed'}
       `}
       style={{ width: getDiskWidth(size) }}
-      onPointerDown={handlePointerDown}
+      onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
       data-testid={`disk-${size}-${tower}`}
       data-size={size}
       data-tower={tower}
