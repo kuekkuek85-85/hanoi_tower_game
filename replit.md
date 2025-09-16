@@ -45,9 +45,10 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 ### Database and Storage
-- **Neon Database**: Serverless PostgreSQL database via `@neondatabase/serverless`
+- **Supabase Database**: Cloud PostgreSQL 17.6 database with real-time capabilities
 - **Drizzle**: Type-safe ORM with `drizzle-orm` and schema generation
 - **Session Storage**: PostgreSQL session store with `connect-pg-simple`
+- **Migration**: Successfully migrated from local PostgreSQL to Supabase cloud database (September 2025)
 
 ### UI and Interaction
 - **Radix UI**: Comprehensive primitive component library for accessibility
