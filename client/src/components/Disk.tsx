@@ -26,14 +26,19 @@ export function Disk({
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!isTop || !diskRef.current) return;
-    if (accessibilityState.isKeyboardMode) return; // 키보드 모드에서는 드래그 비활성화
     
-    e.preventDefault();
-    const rect = diskRef.current.getBoundingClientRect();
-    const x = e.clientX;
-    const y = e.clientY;
+    // 마우스/터치 이벤트인 경우 드래그 허용
+    if (e.pointerType === 'mouse' || e.pointerType === 'touch' || e.pointerType === 'pen') {
+      e.preventDefault();
+      const x = e.clientX;
+      const y = e.clientY;
+      
+      onDragStart(size, tower, x, y, diskRef.current);
+      return;
+    }
     
-    onDragStart(size, tower, x, y, diskRef.current);
+    // 키보드 모드에서만 드래그 비활성화
+    if (accessibilityState.isKeyboardMode && e.pointerType === '') return;
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -45,7 +50,10 @@ export function Disk({
     }
   };
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    // 마우스 클릭인 경우 키보드 선택 방지
+    if (e.detail > 0) return;
+    
     if (accessibilityState.isKeyboardMode && isTop && onKeyboardSelect) {
       onKeyboardSelect(size, tower);
     }
@@ -78,7 +86,7 @@ export function Disk({
       ref={diskRef}
       className={`
         disk disk-${size} bg-gradient-to-r ${getDiskColor(size)} 
-        ${isTop && !accessibilityState.isKeyboardMode ? 'cursor-grab' : 'cursor-not-allowed'}
+        ${isTop ? 'cursor-grab' : 'cursor-not-allowed'}
         ${isSelected ? 'disk-selected' : ''}
         ${isFocused ? 'disk-focused' : ''}
         ${isTop && accessibilityState.isKeyboardMode ? 'keyboard-interactive' : ''}
