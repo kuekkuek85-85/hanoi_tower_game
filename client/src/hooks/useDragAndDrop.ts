@@ -95,40 +95,40 @@ export function useDragAndDrop(
     const element = dragElementRef.current;
     const draggedFrom = dragInfoRef.current.draggedFrom;
     
-    // 드롭 대상 찾기 - 간단하고 명확한 방식
+    // 메인 기둥 컨테이너만 선택 (tower 클래스와 data-tower 속성을 가진 요소)
+    const towers = document.querySelectorAll('.tower[data-tower]');
+    
     let dropTarget: TowerName | null = null;
-    let bestMatch: { tower: TowerName; score: number } | null = null;
+    let bestDistance = Infinity;
     
-    const towers = document.querySelectorAll('[data-tower]');
-    
-    console.log('기둥별 위치 확인:');
+    console.log('메인 기둥 컨테이너 확인:');
     towers.forEach(tower => {
       const rect = tower.getBoundingClientRect();
       const towerName = tower.getAttribute('data-tower') as TowerName;
       
-      console.log(`기둥 ${towerName}: 영역 (${rect.left}-${rect.right}, ${rect.top}-${rect.bottom})`);
+      console.log(`기둥 ${towerName}: (${rect.left.toFixed(1)}-${rect.right.toFixed(1)}, ${rect.top.toFixed(1)}-${rect.bottom.toFixed(1)})`);
       
       // 기둥 영역 안에 있는지 확인
       if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-        // 기둥 중심에서의 거리로 점수 계산 (가까울수록 높은 점수)
+        // 기둥 중심에서의 거리 계산
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
         const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
-        const score = 1000 - distance; // 거리가 가까울수록 높은 점수
         
-        console.log(`기둥 ${towerName} 감지됨 - 거리: ${distance.toFixed(1)}, 점수: ${score.toFixed(1)}`);
+        console.log(`기둥 ${towerName} 감지 - 거리: ${distance.toFixed(1)}`);
         
-        if (!bestMatch || score > bestMatch.score) {
-          bestMatch = { tower: towerName, score };
+        // 가장 가까운 기둥 선택
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          dropTarget = towerName;
         }
       }
     });
     
-    if (bestMatch) {
-      dropTarget = bestMatch.tower;
-      console.log(`최종 선택된 기둥: ${dropTarget} (점수: ${bestMatch.score.toFixed(1)})`);
+    if (dropTarget) {
+      console.log(`최종 드롭 기둥: ${dropTarget} (거리: ${bestDistance.toFixed(1)})`);
     } else {
-      console.log('어떤 기둥 영역에도 해당하지 않음');
+      console.log('기둥 영역을 벗어남');
     }
 
     // 이동 가능성 체크 및 이동 시도
@@ -138,7 +138,7 @@ export function useDragAndDrop(
       success = onMove(draggedFrom, dropTarget);
       console.log(`이동 결과: ${success}`);
     } else if (dropTarget === draggedFrom) {
-      console.log(`같은 기둥으로의 드롭 시도: ${dropTarget}`);
+      console.log(`같은 기둥으로의 드롭: ${dropTarget}`);
     } else {
       console.log('유효한 드롭 대상 없음');
     }
@@ -178,8 +178,9 @@ export function useDragAndDrop(
   const getHighlightedTower = useCallback((x: number, y: number): TowerName | null => {
     if (!dragInfoRef.current.isDragging || !dragInfoRef.current.draggedFrom) return null;
 
-    const towers = document.querySelectorAll('[data-tower]');
-    let bestMatch: { tower: TowerName; score: number } | null = null;
+    const towers = document.querySelectorAll('.tower[data-tower]');
+    let closestTower: TowerName | null = null;
+    let bestDistance = Infinity;
     
     for (let i = 0; i < towers.length; i++) {
       const tower = towers[i];
@@ -189,18 +190,16 @@ export function useDragAndDrop(
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
         const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
-        const score = 1000 - distance;
         
         const towerName = tower.getAttribute('data-tower') as TowerName;
-        if (canMove(dragInfoRef.current.draggedFrom, towerName)) {
-          if (!bestMatch || score > bestMatch.score) {
-            bestMatch = { tower: towerName, score };
-          }
+        if (canMove(dragInfoRef.current.draggedFrom, towerName) && distance < bestDistance) {
+          bestDistance = distance;
+          closestTower = towerName;
         }
       }
     }
 
-    return bestMatch ? bestMatch.tower : null;
+    return closestTower;
   }, [canMove]);
 
   return {
