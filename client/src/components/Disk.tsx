@@ -110,6 +110,7 @@ export function Disk({ size, tower, isTop, onDragStart }: DiskProps) {
       className={`
         disk disk-${size} bg-gradient-to-r ${getDiskColor(size)} 
         ${isTop ? 'cursor-grab active:cursor-grabbing' : 'cursor-not-allowed'}
+        rounded-lg shadow-lg flex items-center justify-center
       `}
       style={{ 
         width: diskWidth,
@@ -125,6 +126,18 @@ export function Disk({ size, tower, isTop, onDragStart }: DiskProps) {
       data-size={size}
       data-tower={tower}
       title={`원판 ${size} (기둥 ${tower})`}
-    />
+    >
+      <span 
+        className="text-white font-bold text-xs sm:text-sm drop-shadow-lg select-none pointer-events-none"
+        style={{
+          fontSize: `${Math.max(10, Math.min(16, parseInt(diskWidth) / 8))}px`,
+          textShadow: '1px 1px 2px rgba(0,0,0,0.8)'
+        }}
+        data-testid={`text-disk-number-${size}-${tower}`}
+        aria-label={`원판 ${size}`}
+      >
+        {size}
+      </span>
+    </div>
   );
 }
