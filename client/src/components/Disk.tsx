@@ -111,7 +111,14 @@ export function Disk({ size, tower, isTop, onDragStart }: DiskProps) {
         disk disk-${size} bg-gradient-to-r ${getDiskColor(size)} 
         ${isTop ? 'cursor-grab active:cursor-grabbing' : 'cursor-not-allowed'}
       `}
-      style={{ width: diskWidth }}
+      style={{ 
+        width: diskWidth,
+        minWidth: '30px',
+        height: '24px',
+        minHeight: '16px',
+        zIndex: 10,
+        position: 'relative'
+      }}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
       data-testid={`disk-${size}-${tower}`}
