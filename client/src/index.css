@@ -179,8 +179,8 @@
 }
 
 .tower {
-  min-height: 250px;
-  max-height: 400px;
+  min-height: 300px;
+  max-height: 480px;
   width: 28vw;
   max-width: 220px;
   display: flex;
@@ -214,8 +214,8 @@
   transform: translateX(-50%);
   width: 6px;
   height: calc(100% - 40px);
-  min-height: 200px;
-  max-height: 350px;
+  min-height: 240px;
+  max-height: 420px;
   background: linear-gradient(to bottom, #8B4513, #A0522D);
   border-radius: 3px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
@@ -438,16 +438,16 @@
     flex: 1 1 0;
     min-width: 0;
     max-width: 85px;
-    min-height: 180px;
-    max-height: 250px;
+    min-height: 216px;
+    max-height: 300px;
     padding: 4px;
   }
   
   .tower::after {
     height: calc(100% - 30px);
-    max-height: 25vh;
-    max-height: 25svh;
-    max-height: 25dvh;
+    max-height: 30vh;
+    max-height: 30svh;
+    max-height: 30dvh;
     width: 3px;
   }
   
@@ -482,16 +482,16 @@
     flex: 1 1 0;
     min-width: 0;
     max-width: 100px;
-    min-height: 200px;
-    max-height: 280px;
+    min-height: 240px;
+    max-height: 336px;
     padding: 6px;
   }
   
   .tower::after {
     height: calc(100% - 35px);
-    max-height: 27vh;
-    max-height: 27svh;
-    max-height: 27dvh;
+    max-height: 33vh;
+    max-height: 33svh;
+    max-height: 33dvh;
     width: 4px;
   }
   
@@ -531,16 +531,16 @@
     flex: 1 1 0;
     min-width: 0;
     max-width: 120px;
-    min-height: 150px;
-    max-height: 200px;
+    min-height: 180px;
+    max-height: 240px;
     padding: 6px;
   }
   
   .tower::after {
     height: calc(100% - 30px);
-    max-height: 55vh;
-    max-height: 55svh;
-    max-height: 55dvh;
+    max-height: 66vh;
+    max-height: 66svh;
+    max-height: 66dvh;
     width: 4px;
   }
   
@@ -575,17 +575,17 @@
     flex: 1 1 0;
     min-width: 0;
     max-width: 140px;
-    max-height: 40vh;
-    max-height: 40svh;
-    max-height: 40dvh;
+    max-height: 48vh;
+    max-height: 48svh;
+    max-height: 48dvh;
     padding: 8px;
   }
   
   .tower::after {
     height: calc(100% - 40px);
-    max-height: 35vh;
-    max-height: 35svh;
-    max-height: 35dvh;
+    max-height: 42vh;
+    max-height: 42svh;
+    max-height: 42dvh;
     width: 5px;
   }
   
@@ -620,17 +620,17 @@
     flex: 1 1 0;
     min-width: 0;
     max-width: 180px;
-    max-height: 50vh;
-    max-height: 50svh;
-    max-height: 50dvh;
+    max-height: 60vh;
+    max-height: 60svh;
+    max-height: 60dvh;
     padding: 10px;
   }
   
   .tower::after {
     height: calc(100% - 45px);
-    max-height: 45vh;
-    max-height: 45svh;
-    max-height: 45dvh;
+    max-height: 54vh;
+    max-height: 54svh;
+    max-height: 54dvh;
     width: 5px;
   }
   
