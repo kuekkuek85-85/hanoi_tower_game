@@ -8,9 +8,10 @@ interface GameBoardProps {
   towers: TowerState;
   onMove: (from: TowerName, to: TowerName) => boolean;
   canMove: (from: TowerName, to: TowerName) => boolean;
+  isGameActive: boolean;
 }
 
-export function GameBoard({ towers, onMove, canMove }: GameBoardProps) {
+export function GameBoard({ towers, onMove, canMove, isGameActive }: GameBoardProps) {
   const [highlightedTower, setHighlightedTower] = useState<TowerName | null>(null);
   const [invalidTower, setInvalidTower] = useState<TowerName | null>(null);
   const { playMoveSound, playErrorSound } = useGameAudio();

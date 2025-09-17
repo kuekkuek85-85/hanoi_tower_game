@@ -26,9 +26,21 @@ export function GameScreen({ studentId, studentName, disks, onBackToStart }: Gam
   
   const { toast } = useToast();
 
+  // Initialize game
   useEffect(() => {
     initializeGame(studentId, studentName, disks);
   }, [studentId, studentName, disks, initializeGame]);
+
+  // Toggle body class for scroll lock during game mode
+  useEffect(() => {
+    // Add game-mode class when GameScreen mounts
+    document.body.classList.add('game-mode');
+    
+    // Remove game-mode class when GameScreen unmounts
+    return () => {
+      document.body.classList.remove('game-mode');
+    };
+  }, []);
 
   const handleBackToStart = () => {
     onBackToStart();
