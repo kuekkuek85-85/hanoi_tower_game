@@ -55,11 +55,10 @@ export class MemStorage implements IStorage {
     return record;
   }
 
-  async getHanoiRecords(limit = 50): Promise<HanoiRecord[]> {
+  async getHanoiRecords(limit?: number): Promise<HanoiRecord[]> {
     const records = Array.from(this.hanoiRecords.values())
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, limit);
-    return records;
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return limit ? records.slice(0, limit) : records;
   }
 
   async searchHanoiRecords(query: string): Promise<HanoiRecord[]> {
@@ -109,13 +108,21 @@ export class DatabaseStorage implements IStorage {
     return record;
   }
 
-  async getHanoiRecords(limit = 50): Promise<HanoiRecord[]> {
-    const records = await db
-      .select()
-      .from(hanoiRecords)
-      .orderBy(desc(hanoiRecords.createdAt))
-      .limit(limit);
-    return records;
+  async getHanoiRecords(limit?: number): Promise<HanoiRecord[]> {
+    if (limit) {
+      const records = await db
+        .select()
+        .from(hanoiRecords)
+        .orderBy(desc(hanoiRecords.createdAt))
+        .limit(limit);
+      return records;
+    } else {
+      const records = await db
+        .select()
+        .from(hanoiRecords)
+        .orderBy(desc(hanoiRecords.createdAt));
+      return records;
+    }
   }
 
   async searchHanoiRecords(query: string): Promise<HanoiRecord[]> {
