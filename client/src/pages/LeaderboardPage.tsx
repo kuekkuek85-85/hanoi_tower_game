@@ -30,7 +30,7 @@ export default function LeaderboardPage() {
   const recordsPerPage = 10;
 
   // Fetch all records
-  const { data: allRecords = [], isLoading, error } = useQuery<HanoiRecord[]>({
+  const { data: allRecords = [], isLoading, error, refetch } = useQuery<HanoiRecord[]>({
     queryKey: ['/api/records'],
     enabled: true,
   });
@@ -146,7 +146,7 @@ export default function LeaderboardPage() {
             <p className="text-destructive mb-4" data-testid="text-error">
               기록을 불러오는데 실패했습니다.
             </p>
-            <Button onClick={() => window.location.reload()} data-testid="button-retry">
+            <Button onClick={() => refetch()} data-testid="button-retry">
               다시 시도
             </Button>
           </CardContent>

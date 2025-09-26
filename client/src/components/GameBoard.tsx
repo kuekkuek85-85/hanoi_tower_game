@@ -45,12 +45,10 @@ export function GameBoard({ towers, onMove, canMove, isGameActive }: GameBoardPr
     y: number,
     element: HTMLElement
   ) => {
-    console.log('드래그 시작:', disk, tower, x, y);
     startDrag(disk, tower, x, y, element);
     setHighlightedTower(null);
     
     const handleMouseMove = (e: MouseEvent) => {
-      console.log('마우스 이동:', e.clientX, e.clientY);
       updateDrag(e.clientX, e.clientY);
       setHighlightedTower(getHighlightedTower(e.clientX, e.clientY));
     };
@@ -59,7 +57,6 @@ export function GameBoard({ towers, onMove, canMove, isGameActive }: GameBoardPr
       if (e.touches.length > 0) {
         e.preventDefault(); // 페이지 스크롤 방지
         const touch = e.touches[0];
-        console.log('터치 이동:', touch.clientX, touch.clientY);
         updateDrag(touch.clientX, touch.clientY);
         setHighlightedTower(getHighlightedTower(touch.clientX, touch.clientY));
       }
@@ -70,12 +67,10 @@ export function GameBoard({ towers, onMove, canMove, isGameActive }: GameBoardPr
       if (e instanceof MouseEvent) {
         x = e.clientX;
         y = e.clientY;
-        console.log('마우스 끝:', x, y);
       } else if (e.changedTouches && e.changedTouches.length > 0) {
         const touch = e.changedTouches[0];
         x = touch.clientX;
         y = touch.clientY;
-        console.log('터치 끝:', x, y);
       } else {
         return;
       }
