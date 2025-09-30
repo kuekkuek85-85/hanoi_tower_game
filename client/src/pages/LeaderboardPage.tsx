@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Search, Trophy, Medal, Award, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowLeft, Search, Trophy, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { HanoiRecord } from '@shared/schema';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -112,13 +112,6 @@ export default function LeaderboardPage() {
 
   const calculateMinMoves = (disks: number): number => {
     return Math.pow(2, disks) - 1;
-  };
-
-  const getRankIcon = (index: number) => {
-    if (index === 0) return <Trophy className="h-4 w-4 text-yellow-500" />;
-    if (index === 1) return <Medal className="h-4 w-4 text-gray-400" />;
-    if (index === 2) return <Award className="h-4 w-4 text-amber-600" />;
-    return null;
   };
 
   const formatTime = (seconds: number): string => {
@@ -244,7 +237,7 @@ export default function LeaderboardPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-16" data-testid="header-rank">순위</TableHead>
+                    <TableHead className="w-16" data-testid="header-rank">순번</TableHead>
                     <TableHead>
                       <Button
                         variant="ghost"
@@ -321,12 +314,9 @@ export default function LeaderboardPage() {
                           data-testid={`row-record-${record.id}`}
                         >
                           <TableCell className="font-medium">
-                            <div className="flex items-center gap-2">
-                              {getRankIcon(globalIndex)}
-                              <span data-testid={`text-rank-${globalIndex + 1}`}>
-                                {globalIndex + 1}
-                              </span>
-                            </div>
+                            <span data-testid={`text-rank-${globalIndex + 1}`}>
+                              {globalIndex + 1}
+                            </span>
                           </TableCell>
                           <TableCell>
                             <div>
