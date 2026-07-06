@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Trophy } from 'lucide-react';
 import { GameStats } from '@/types/game';
 import { useEffect, useRef } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { type InsertHanoiRecord } from '@shared/schema';
@@ -20,8 +20,9 @@ interface WinModalProps {
 
 export function WinModal({ isOpen, gameStats, studentId, studentName, onPlayAgain, onBackToMenu }: WinModalProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const hasSaved = useRef(false);
-  
+
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -34,6 +35,7 @@ export function WinModal({ isOpen, gameStats, studentId, studentName, onPlayAgai
       return await response.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/records'] });
       toast({
         title: '기록 저장 완료',
         description: '게임 결과가 성공적으로 저장되었습니다.',
