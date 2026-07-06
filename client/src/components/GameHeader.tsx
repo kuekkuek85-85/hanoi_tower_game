@@ -36,7 +36,7 @@ export function GameHeader({
 
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
-        if (gameState.history.length > 0) {
+        if (!gameState.completed && gameState.history.length > 0) {
           onUndo();
         }
       }
@@ -44,7 +44,7 @@ export function GameHeader({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onUndo, gameState.history.length]);
+  }, [onUndo, gameState.history.length, gameState.completed]);
 
   const getLastMove = () => {
     if (gameState.history.length === 0) return null;

@@ -29,7 +29,7 @@ export function WinModal({ isOpen, gameStats, studentId, studentName, onPlayAgai
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
   
-  const saveGameResult = useMutation({
+  const { mutate: saveRecord } = useMutation({
     mutationFn: async (record: InsertHanoiRecord) => {
       const response = await apiRequest('POST', '/api/records', record);
       return await response.json();
@@ -54,20 +54,19 @@ export function WinModal({ isOpen, gameStats, studentId, studentName, onPlayAgai
   useEffect(() => {
     if (isOpen && !hasSaved.current) {
       hasSaved.current = true;
-      const record: InsertHanoiRecord = {
+      saveRecord({
         studentId,
         studentName,
         disks: gameStats.disks,
         moves: gameStats.moves,
         seconds: gameStats.timeElapsed,
-      };
-      saveGameResult.mutate(record);
+      });
     }
-    
+
     if (!isOpen) {
       hasSaved.current = false;
     }
-  }, [isOpen, studentId, studentName, gameStats, saveGameResult]);
+  }, [isOpen, studentId, studentName, gameStats.disks, gameStats.moves, gameStats.timeElapsed, saveRecord]);
   
   // 축하 효과
   useEffect(() => {
@@ -86,7 +85,6 @@ export function WinModal({ isOpen, gameStats, studentId, studentName, onPlayAgai
     `;
     document.body.appendChild(celebration);
 
-    // 색종이 효과
     for (let i = 0; i < 50; i++) {
       setTimeout(() => {
         const confetti = document.createElement('div');
@@ -101,7 +99,6 @@ export function WinModal({ isOpen, gameStats, studentId, studentName, onPlayAgai
           animation-delay: ${Math.random() * 2}s;
         `;
         celebration.appendChild(confetti);
-        
         setTimeout(() => confetti.remove(), 3000);
       }, i * 50);
     }

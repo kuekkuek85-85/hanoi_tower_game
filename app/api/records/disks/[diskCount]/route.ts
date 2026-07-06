@@ -24,9 +24,9 @@ export async function GET(
   try {
     const diskCount = parseInt(params.diskCount);
     const { searchParams } = new URL(request.url);
-    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 50;
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') ?? '') || 50, 1), 200);
 
-    if (diskCount < 3 || diskCount > 10) {
+    if (!Number.isFinite(diskCount) || diskCount < 3 || diskCount > 10) {
       return NextResponse.json(
         { error: 'Disk count must be between 3 and 10' },
         { status: 400 }

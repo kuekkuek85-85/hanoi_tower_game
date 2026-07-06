@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb, RECORDS_COLLECTION } from '@lib/db';
 import { insertHanoiRecordSchema, HanoiRecord } from '@shared/schema';
 import { Timestamp } from 'firebase-admin/firestore';
+import { ZodError } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,13 +21,14 @@ function docToRecord(id: string, data: FirebaseFirestore.DocumentData): HanoiRec
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') ?? '') || 500, 1), 500);
 
     const db = getDb();
-    let query = db.collection(RECORDS_COLLECTION).orderBy('createdAt', 'desc') as FirebaseFirestore.Query;
-    if (limit) query = query.limit(limit);
-
-    const snapshot = await query.get();
+    const snapshot = await db
+      .collection(RECORDS_COLLECTION)
+      .orderBy('createdAt', 'desc')
+      .limit(limit)
+      .get();
     const records = snapshot.docs.map(doc => docToRecord(doc.id, doc.data()));
 
     return NextResponse.json(records);
@@ -40,6 +42,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const recordData = insertHanoiRecordSchema.parse(body);
 
+    const minMoves = Math.pow(2, recordData.disks) - 1;
+    if (recordData.moves < minMoves) {
+      return NextResponse.json({ error: 'Invalid submission' }, { status: 400 });
+    }
+
     const db = getDb();
     const docRef = await db.collection(RECORDS_COLLECTION).add({
       ...recordData,
@@ -51,9 +58,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(record);
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Invalid data' },
-      { status: 400 }
-    );
+    if (error instanceof ZodError) {
+      return NextResponse.json({ error: 'Invalid submission' }, { status: 400 });
+    }
+    return NextResponse.json({ error: 'Failed to save record' }, { status: 500 });
   }
 }

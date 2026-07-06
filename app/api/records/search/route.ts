@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     }
 
     const db = getDb();
-    const snapshot = await db.collection(RECORDS_COLLECTION).get();
+    const snapshot = await db.collection(RECORDS_COLLECTION).limit(500).get();
     const q = query.toLowerCase();
 
     const records = snapshot.docs
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         r.studentId.includes(query) ||
         r.studentName.toLowerCase().includes(q)
       )
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return NextResponse.json(records);
   } catch {
