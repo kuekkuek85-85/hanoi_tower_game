@@ -1,5 +1,7 @@
+'use client';
+
 import { useState } from 'react';
-import { useLocation } from 'wouter';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +14,7 @@ interface StartScreenProps {
 }
 
 export function StartScreen({ onStartGame }: StartScreenProps) {
-  const [, setLocation] = useLocation();
+  const router = useRouter();
   const [studentInfo, setStudentInfo] = useState('');
   const [diskCount, setDiskCount] = useState([3]);
   const [error, setError] = useState('');
@@ -28,7 +30,7 @@ export function StartScreen({ onStartGame }: StartScreenProps) {
 
   const handleSubmit = () => {
     const input = studentInfo.trim();
-    
+
     if (!validateInput(input)) {
       setError('올바른 형식으로 입력해주세요 (예: 10101 홍길동)');
       return;
@@ -117,7 +119,7 @@ export function StartScreen({ onStartGame }: StartScreenProps) {
                 </div>
 
                 {/* 시작 버튼 */}
-                <Button 
+                <Button
                   onClick={handleSubmit}
                   className="w-full"
                   size="lg"
@@ -133,7 +135,7 @@ export function StartScreen({ onStartGame }: StartScreenProps) {
           <Button
             variant="outline"
             className="w-full mb-4"
-            onClick={() => setLocation('/leaderboard')}
+            onClick={() => router.push('/leaderboard')}
             data-testid="button-leaderboard"
           >
             <Trophy className="h-4 w-4 mr-2" />

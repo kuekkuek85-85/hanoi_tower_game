@@ -1,6 +1,8 @@
+'use client';
+
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useLocation } from 'wouter';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,26 +23,24 @@ interface SortState {
 }
 
 export default function LeaderboardPage() {
-  const [, setLocation] = useLocation();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [diskFilter, setDiskFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [sortState, setSortState] = useState<SortState>({ field: 'moves', direction: 'asc' });
-  
+
   const recordsPerPage = 10;
 
-  // Fetch all records
   const { data: allRecords = [], isLoading, error, refetch } = useQuery<HanoiRecord[]>({
     queryKey: ['/api/records'],
     enabled: true,
   });
 
-  // Calculate optimal records per disk count
   const optimalRecords = useMemo(() => {
     const optimal: Record<number, HanoiRecord> = {};
     allRecords.forEach(record => {
       const current = optimal[record.disks];
-      if (!current || record.moves < current.moves || 
+      if (!current || record.moves < current.moves ||
           (record.moves === current.moves && record.seconds < current.seconds)) {
         optimal[record.disks] = record;
       }
@@ -48,11 +48,9 @@ export default function LeaderboardPage() {
     return optimal;
   }, [allRecords]);
 
-  // Filter and sort records
   const filteredAndSortedRecords = useMemo(() => {
     let filtered = allRecords;
 
-    // Apply search filter
     if (searchQuery.trim()) {
       filtered = filtered.filter(record =>
         record.studentId.includes(searchQuery.trim()) ||
@@ -60,12 +58,10 @@ export default function LeaderboardPage() {
       );
     }
 
-    // Apply disk count filter
     if (diskFilter !== 'all') {
       filtered = filtered.filter(record => record.disks === parseInt(diskFilter));
     }
 
-    // Apply sorting
     filtered.sort((a, b) => {
       const { field, direction } = sortState;
       let aValue: any = a[field];
@@ -84,7 +80,6 @@ export default function LeaderboardPage() {
     return filtered;
   }, [allRecords, searchQuery, diskFilter, sortState]);
 
-  // Pagination
   const totalPages = Math.ceil(filteredAndSortedRecords.length / recordsPerPage);
   const paginatedRecords = filteredAndSortedRecords.slice(
     (currentPage - 1) * recordsPerPage,
@@ -101,8 +96,8 @@ export default function LeaderboardPage() {
 
   const getSortIcon = (field: SortField) => {
     if (sortState.field !== field) return <ArrowUpDown className="h-4 w-4" />;
-    return sortState.direction === 'asc' ? 
-      <ArrowUp className="h-4 w-4" /> : 
+    return sortState.direction === 'asc' ?
+      <ArrowUp className="h-4 w-4" /> :
       <ArrowDown className="h-4 w-4" />;
   };
 
@@ -157,7 +152,7 @@ export default function LeaderboardPage() {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setLocation('/')}
+              onClick={() => router.push('/')}
               data-testid="button-back-home"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -181,7 +176,6 @@ export default function LeaderboardPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
@@ -196,7 +190,6 @@ export default function LeaderboardPage() {
                 />
               </div>
 
-              {/* Disk Filter */}
               <Select
                 value={diskFilter}
                 onValueChange={(value) => {
@@ -217,7 +210,6 @@ export default function LeaderboardPage() {
                 </SelectContent>
               </Select>
 
-              {/* Results count */}
               <div className="flex items-center text-sm text-muted-foreground">
                 <span data-testid="text-results-count">
                   총 {filteredAndSortedRecords.length}개 기록

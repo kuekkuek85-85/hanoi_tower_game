@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { StartScreen } from '@/components/StartScreen';
 import { GameScreen } from '@/components/GameScreen';
