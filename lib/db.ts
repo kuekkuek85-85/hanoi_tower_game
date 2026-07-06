@@ -1,18 +1,21 @@
-import postgres from 'postgres';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import * as schema from '@shared/schema';
+import { getApps, initializeApp, cert, ServiceAccount } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
-function createDb() {
-  const url = process.env.DATABASE_URL;
-  if (!url) {
-    throw new Error('DATABASE_URL must be set. Use Supabase Transaction Pooler (port 6543).');
+function initFirebase() {
+  if (!getApps().length) {
+    const json = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (!json) {
+      throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON must be set.');
+    }
+    initializeApp({ credential: cert(JSON.parse(json) as ServiceAccount) });
   }
-  // prepare: false is required for Supabase Transaction mode pooler (port 6543)
-  return drizzle(postgres(url, { prepare: false }), { schema });
+  return getFirestore();
 }
 
-let _db: ReturnType<typeof createDb> | undefined;
+let _db: ReturnType<typeof getFirestore> | undefined;
 
 export function getDb() {
-  return (_db ??= createDb());
+  return (_db ??= initFirebase());
 }
+
+export const RECORDS_COLLECTION = 'hanoi_records';
