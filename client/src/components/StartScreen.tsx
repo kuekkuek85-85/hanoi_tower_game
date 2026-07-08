@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Info, Trophy } from 'lucide-react';
+import { Info, Trophy, GraduationCap } from 'lucide-react';
 
 interface StartScreenProps {
   onStartGame: (studentId: string, studentName: string, disks: number) => void;
@@ -140,6 +140,17 @@ export function StartScreen({ onStartGame }: StartScreenProps) {
           >
             <Trophy className="h-4 w-4 mr-2" />
             명예의 전당
+          </Button>
+
+          {/* 교사용 재귀 시뮬레이션 버튼 */}
+          <Button
+            variant="ghost"
+            className="w-full mb-4 text-muted-foreground text-sm"
+            onClick={() => router.push('/simulation')}
+            data-testid="button-simulation"
+          >
+            <GraduationCap className="h-4 w-4 mr-2" />
+            교사용 재귀 시뮬레이션
           </Button>
 
           {/* 게임 설명 */}
