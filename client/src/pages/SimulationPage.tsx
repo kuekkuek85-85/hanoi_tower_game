@@ -89,6 +89,49 @@ function calcState(upTo: number): TowerState {
   return s;
 }
 
+function getCaption(move: SimMove): { badge: string; badgeStyle: string; text: string } {
+  const frames = move.callStack;
+  const inner = frames[frames.length - 1];
+  const parent = frames.length >= 2 ? frames[frames.length - 2] : null;
+  const outer = frames[0];
+
+  // Top-level phase badge
+  let badge: string;
+  let badgeStyle: string;
+  if (frames.length === 1) {
+    badge = '핵심 이동!';
+    badgeStyle = 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300';
+  } else if (outer.phase === 'pre') {
+    badge = `① 원판 ${outer.n}번 꺼낼 준비`;
+    badgeStyle = 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300';
+  } else {
+    badge = `③ 원판 ${outer.n}번 이동 완료 → 마무리`;
+    badgeStyle = 'bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/40 dark:text-purple-300';
+  }
+
+  // Short explanation
+  let text: string;
+  if (!parent) {
+    // Disk 5 main move (move 16) — no parent
+    text = `위의 원판 ${inner.n - 1}개를 ${inner.aux}로 미리 치웠으니, 이제 원판 ${inner.n}번을 ${inner.dst}로 이동합니다.`;
+  } else if (inner.n === 1) {
+    // Base case: disk 1 can always move directly
+    if (parent.phase === 'pre') {
+      text = `원판 1번은 바로 이동 가능합니다. (원판 ${parent.n}번 위를 비우는 중)`;
+    } else {
+      text = `원판 1번은 바로 이동 가능합니다. (원판 ${parent.n}번 위에 다시 쌓는 중)`;
+    }
+  } else if (parent.phase === 'pre') {
+    // Clearing: moving disk inner.n out of the way to expose parent.n
+    text = `원판 ${parent.n}번을 꺼내려면 위의 원판들을 먼저 치워야 합니다. 원판 ${inner.n}번 위의 ${inner.n - 1}개를 치웠으니 이동합니다.`;
+  } else {
+    // Restoring: moving disk inner.n back onto the destination
+    text = `원판 ${parent.n}번을 이미 옮겼습니다. 치워뒀던 원판들을 ${parent.dst}로 이동합니다. 원판 ${inner.n}번을 ${inner.dst}로 이동합니다.`;
+  }
+
+  return { badge, badgeStyle, text };
+}
+
 export default function SimulationPage() {
   const router = useRouter();
   const [authed, setAuthed] = useState(false);
@@ -143,7 +186,7 @@ export default function SimulationPage() {
                 <Lock className="h-5 w-5" /> 교사 전용 메뉴
               </DialogTitle>
               <DialogDescription>
-                재귀 시뮬레이션은 교사 전용입니다. 비밀번호를 입력하세요.
+                비밀번호를 입력하세요.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3 mt-2">
@@ -180,7 +223,7 @@ export default function SimulationPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">하노이타워 재귀 시뮬레이션</h1>
+            <h1 className="text-2xl font-bold">하노이타워 원리 시뮬레이션</h1>
             <p className="text-sm text-muted-foreground">
               교사 전용 · 원판 {TOTAL_DISKS}개 · 총 {total}번 이동
             </p>
@@ -218,9 +261,6 @@ export default function SimulationPage() {
         {/* Caption */}
         <CaptionCard move={currentMove} step={step} total={total} />
 
-        {/* Call stack */}
-        {currentMove && <CallStackCard frames={currentMove.callStack} />}
-
         {/* Controls */}
         <Card>
           <CardContent className="p-4 space-y-4">
@@ -228,7 +268,7 @@ export default function SimulationPage() {
               <Button variant="outline" size="icon" onClick={handleReset} title="처음으로">
                 <RotateCcw className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" onClick={handlePrev} disabled={step === 0} title="이전 단계">
+              <Button variant="outline" size="icon" onClick={handlePrev} disabled={step === 0} title="이전">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button size="lg" className="px-8 min-w-36" onClick={handlePlayPause}>
@@ -236,7 +276,7 @@ export default function SimulationPage() {
                   ? <><Pause className="h-5 w-5 mr-2" />일시정지</>
                   : <><Play className="h-5 w-5 mr-2" />{step >= total ? '다시보기' : '재생'}</>}
               </Button>
-              <Button variant="outline" size="icon" onClick={handleNext} disabled={step >= total} title="다음 단계">
+              <Button variant="outline" size="icon" onClick={handleNext} disabled={step >= total} title="다음">
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -269,7 +309,6 @@ function TowerViz({ state, highlight }: { state: TowerState; highlight: number |
         <div key={peg} className="flex-1 flex flex-col items-center">
           <div className="relative flex flex-col items-center w-full">
             {Array.from({ length: TOTAL_DISKS }, (_, i) => {
-              // i=0 is top slot; state array is bottom-to-top
               const disk = state[peg][TOTAL_DISKS - 1 - i];
               return (
                 <div key={i} className="relative flex items-center justify-center w-full h-7">
@@ -298,9 +337,13 @@ function CaptionCard({ move, step, total }: { move: SimMove | null; step: number
   if (step === 0) {
     return (
       <Card>
-        <CardContent className="p-4 text-center text-muted-foreground text-sm space-y-1">
-          <p className="font-medium">▶ 버튼을 눌러 시뮬레이션을 시작하세요.</p>
-          <p>하노이타워 {TOTAL_DISKS}개를 A→C로 최소 {total}번 이동으로 옮기는 재귀 과정을 단계별로 설명합니다.</p>
+        <CardContent className="p-4 space-y-2 text-sm">
+          <p className="font-semibold">핵심 원리</p>
+          <p>원판 5번(가장 큰 판)을 C로 옮기려면?</p>
+          <p className="text-muted-foreground">→ 위의 원판 4개를 먼저 B로 치워야 합니다.</p>
+          <p className="text-muted-foreground">→ 그 4개를 치우려면? 또 그 위를 먼저 치워야 합니다.</p>
+          <p className="text-muted-foreground">→ 이 과정이 계속 반복됩니다.</p>
+          <p className="font-medium pt-1">▶ 버튼을 눌러 확인하세요.</p>
         </CardContent>
       </Card>
     );
@@ -308,112 +351,21 @@ function CaptionCard({ move, step, total }: { move: SimMove | null; step: number
 
   if (!move) return null;
 
-  const frame = move.callStack[move.callStack.length - 1];
-  const { n, src, dst, aux } = frame;
-  const isBase = n === 1;
+  const { badge, badgeStyle, text } = getCaption(move);
 
   return (
     <Card className="border-2 border-primary/30">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">
-          이동 {move.step}/{total}: 원판 {move.disk}번 ({move.from} → {move.to})
+        <CardTitle className="text-base flex flex-wrap items-center gap-2">
+          <span>이동 {move.step}/{total}: 원판 {move.disk}번</span>
+          <span className="text-muted-foreground font-normal">{move.from} → {move.to}</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        {isBase ? (
-          <div className="rounded-lg p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-sm space-y-1">
-            <p className="font-semibold text-emerald-700 dark:text-emerald-300">
-              기저 조건 — hanoi(1, {src}, {dst}, {aux})
-            </p>
-            <p className="text-muted-foreground">
-              원판 1개는 직접 이동합니다. 재귀가 멈추는 조건(base case)입니다. 더 이상 쪼갤 필요가 없습니다.
-            </p>
-          </div>
-        ) : (
-          <div className="rounded-lg p-3 bg-muted/50 border text-sm space-y-2">
-            <p className="font-semibold">
-              hanoi({n}, {src}, {dst}, {aux}) 실행 중
-            </p>
-            <p className="text-muted-foreground text-xs">
-              "{src} 기둥의 원판 {n}개를 {dst} 기둥으로 옮기기" — 재귀 3단계 분해:
-            </p>
-            <div className="space-y-1.5">
-              <div className="flex gap-2 text-muted-foreground text-xs opacity-70">
-                <span className="shrink-0 font-mono font-bold text-blue-500">①</span>
-                <span>
-                  hanoi({n - 1}, {src}, {aux}, {dst}) 완료 ✓
-                  <br />
-                  원판 {n - 1}개를 {src}→{aux}로 이동해서 {src}의 맨 아래 원판을 노출시켰습니다.
-                </span>
-              </div>
-              <div className="flex gap-2 font-semibold text-emerald-600 dark:text-emerald-400 text-xs">
-                <span className="shrink-0 font-mono">②</span>
-                <span>
-                  원판 {n}번을 {src}→{dst}로 이동 ← 바로 이 이동!
-                </span>
-              </div>
-              <div className="flex gap-2 text-muted-foreground text-xs">
-                <span className="shrink-0 font-mono font-bold text-purple-500">③</span>
-                <span>
-                  hanoi({n - 1}, {aux}, {dst}, {src}) 예정
-                  <br />
-                  {aux}에 옮겨뒀던 원판 {n - 1}개를 {dst}로 이동합니다.
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function CallStackCard({ frames }: { frames: CallFrame[] }) {
-  const phaseColor: Record<Phase, string> = {
-    pre: 'text-blue-600 dark:text-blue-400',
-    main: 'text-emerald-600 dark:text-emerald-400',
-    post: 'text-purple-600 dark:text-purple-400',
-  };
-  const phaseTag: Record<Phase, string> = {
-    pre: '① 사전 호출 실행 중',
-    main: '← 현재 실행!',
-    post: '③ 사후 호출 실행 중',
-  };
-
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">재귀 호출 스택</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-1 font-mono text-xs">
-          {frames.map((f, i) => {
-            const isCurrent = i === frames.length - 1;
-            return (
-              <div
-                key={i}
-                className={`flex items-center gap-2 rounded px-2 py-1.5 ${
-                  isCurrent
-                    ? 'bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700'
-                    : f.phase === 'pre'
-                      ? 'bg-blue-50 dark:bg-blue-950/20'
-                      : 'bg-purple-50 dark:bg-purple-950/20'
-                }`}
-                style={{ marginLeft: `${i * 12}px` }}
-              >
-                <span className={isCurrent ? 'font-bold' : ''}>
-                  hanoi({f.n}, {f.src}, {f.dst}, {f.aux})
-                </span>
-                <span className={`ml-auto shrink-0 ${phaseColor[f.phase]}`}>
-                  {phaseTag[f.phase]}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          재귀 깊이: {frames.length}단계 (최대 {TOTAL_DISKS}단계)
-        </p>
+      <CardContent className="space-y-2">
+        <span className={`inline-block text-xs font-semibold px-2 py-1 rounded border ${badgeStyle}`}>
+          {badge}
+        </span>
+        <p className="text-sm">{text}</p>
       </CardContent>
     </Card>
   );
