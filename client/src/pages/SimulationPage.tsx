@@ -11,62 +11,34 @@ import { ArrowLeft, Play, Pause, ChevronLeft, ChevronRight, RotateCcw, Lock } fr
 
 type Peg = 'A' | 'B' | 'C';
 type Phase = 'pre' | 'main' | 'post';
-
-interface CallFrame {
-  n: number;
-  src: Peg;
-  dst: Peg;
-  aux: Peg;
-  phase: Phase;
-}
-
-interface SimMove {
-  step: number;
-  disk: number;
-  from: Peg;
-  to: Peg;
-  callStack: CallFrame[];
-}
-
+interface CallFrame { n: number; src: Peg; dst: Peg; aux: Peg; phase: Phase; }
+interface SimMove { step: number; disk: number; from: Peg; to: Peg; callStack: CallFrame[]; }
 type TowerState = Record<Peg, number[]>;
 
 const TOTAL_DISKS = 5;
-
-const DISK_COLORS: Record<number, string> = {
-  1: 'bg-blue-400',
-  2: 'bg-green-400',
-  3: 'bg-yellow-400',
-  4: 'bg-orange-400',
-  5: 'bg-red-400',
-};
-
-const DISK_WIDTH: Record<number, string> = {
-  1: '16%',
-  2: '32%',
-  3: '48%',
-  4: '64%',
-  5: '80%',
-};
-
 const SPEEDS = [0.5, 1, 1.5, 2, 3];
 
-function genMoves(
-  n: number,
-  src: Peg,
-  dst: Peg,
-  aux: Peg,
-  stack: CallFrame[],
-  out: SimMove[],
-): void {
+// ── SVG layout constants ──────────────────────────────────
+const VW = 300;
+const VH = 220;
+const PEG_X: Record<Peg, number> = { A: 55, B: 150, C: 245 };
+const BASE_Y = 185;
+const DISK_H = 23;   // slot height
+const DISK_RH = 18;  // rendered disk height
+const GAP = (DISK_H - DISK_RH) / 2;
+const D_W: Record<number, number> = { 1: 22, 2: 38, 3: 54, 4: 70, 5: 86 };
+const D_FILL: Record<number, string> = {
+  1: '#60a5fa', 2: '#4ade80', 3: '#fbbf24', 4: '#fb923c', 5: '#f87171',
+};
+
+const dX = (p: Peg, n: number) => PEG_X[p] - D_W[n] / 2;
+const dY = (idx: number) => BASE_Y - (idx + 1) * DISK_H + GAP;
+
+// ── Move generator ────────────────────────────────────────
+function genMoves(n: number, src: Peg, dst: Peg, aux: Peg, stack: CallFrame[], out: SimMove[]): void {
   if (n === 0) return;
   genMoves(n - 1, src, aux, dst, [...stack, { n, src, dst, aux, phase: 'pre' }], out);
-  out.push({
-    step: out.length + 1,
-    disk: n,
-    from: src,
-    to: dst,
-    callStack: [...stack, { n, src, dst, aux, phase: 'main' }],
-  });
+  out.push({ step: out.length + 1, disk: n, from: src, to: dst, callStack: [...stack, { n, src, dst, aux, phase: 'main' }] });
   genMoves(n - 1, aux, dst, src, [...stack, { n, src, dst, aux, phase: 'post' }], out);
 }
 
@@ -77,61 +49,50 @@ const ALL_MOVES: SimMove[] = (() => {
 })();
 
 function calcState(upTo: number): TowerState {
-  const s: TowerState = {
-    A: Array.from({ length: TOTAL_DISKS }, (_, i) => TOTAL_DISKS - i),
-    B: [],
-    C: [],
-  };
-  for (let i = 0; i < upTo; i++) {
-    const m = ALL_MOVES[i];
-    s[m.to].push(s[m.from].pop()!);
-  }
+  const s: TowerState = { A: Array.from({ length: TOTAL_DISKS }, (_, i) => TOTAL_DISKS - i), B: [], C: [] };
+  for (let i = 0; i < upTo; i++) { const m = ALL_MOVES[i]; s[m.to].push(s[m.from].pop()!); }
   return s;
 }
 
-function getCaption(move: SimMove): { badge: string; badgeStyle: string; text: string } {
+// ── Caption ───────────────────────────────────────────────
+function getCaption(move: SimMove) {
   const frames = move.callStack;
   const inner = frames[frames.length - 1];
-  const parent = frames.length >= 2 ? frames[frames.length - 2] : null;
   const outer = frames[0];
+  const isMain = frames.length === 1;
+  const isPost = !isMain && outer.phase === 'post';
 
-  // Top-level phase badge
-  let badge: string;
-  let badgeStyle: string;
-  if (frames.length === 1) {
-    badge = '핵심 이동!';
-    badgeStyle = 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/40 dark:text-emerald-300';
-  } else if (outer.phase === 'pre') {
-    badge = `① 원판 ${outer.n}번 꺼낼 준비`;
-    badgeStyle = 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300';
-  } else {
-    badge = `③ 원판 ${outer.n}번 이동 완료 → 마무리`;
-    badgeStyle = 'bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/40 dark:text-purple-300';
+  if (isMain) {
+    return {
+      badge: '② 핵심 이동!',
+      badgeStyle: 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700',
+      text: `위의 원판 ${inner.n - 1}개를 모두 치웠습니다. 드디어 원판 ${inner.n}번을 C로 이동합니다!`,
+    };
   }
-
-  // Short explanation
-  let text: string;
-  if (!parent) {
-    // Disk 5 main move (move 16) — no parent
-    text = `위의 원판 ${inner.n - 1}개를 ${inner.aux}로 미리 치웠으니, 이제 원판 ${inner.n}번을 ${inner.dst}로 이동합니다.`;
-  } else if (inner.n === 1) {
-    // Base case: disk 1 can always move directly
-    if (parent.phase === 'pre') {
-      text = `원판 1번은 바로 이동 가능합니다. (원판 ${parent.n}번 위를 비우는 중)`;
-    } else {
-      text = `원판 1번은 바로 이동 가능합니다. (원판 ${parent.n}번 위에 다시 쌓는 중)`;
-    }
-  } else if (parent.phase === 'pre') {
-    // Clearing: moving disk inner.n out of the way to expose parent.n
-    text = `원판 ${parent.n}번을 꺼내려면 위의 원판들을 먼저 치워야 합니다. 원판 ${inner.n}번 위의 ${inner.n - 1}개를 치웠으니 이동합니다.`;
-  } else {
-    // Restoring: moving disk inner.n back onto the destination
-    text = `원판 ${parent.n}번을 이미 옮겼습니다. 치워뒀던 원판들을 ${parent.dst}로 이동합니다. 원판 ${inner.n}번을 ${inner.dst}로 이동합니다.`;
+  if (inner.n === 1) {
+    return {
+      badge: isPost ? '③ 마무리' : '① 위를 치우는 중',
+      badgeStyle: isPost
+        ? 'bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-700'
+        : 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700',
+      text: '원판 1번은 바로 이동 가능합니다.',
+    };
   }
-
-  return { badge, badgeStyle, text };
+  if (isPost) {
+    return {
+      badge: '③ 마무리',
+      badgeStyle: 'bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-700',
+      text: `원판 ${outer.n}번 이동 완료! 치워뒀던 원판들을 C로 이동 중입니다.`,
+    };
+  }
+  return {
+    badge: '① 위를 치우는 중',
+    badgeStyle: 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700',
+    text: `원판 ${outer.n}번을 꺼내려고 그 위를 비우는 중입니다.`,
+  };
 }
 
+// ── Page ──────────────────────────────────────────────────
 export default function SimulationPage() {
   const router = useRouter();
   const [authed, setAuthed] = useState(false);
@@ -152,11 +113,7 @@ export default function SimulationPage() {
     if (!playing) return;
     const delay = Math.round(1000 / speed);
     const id = setInterval(() => {
-      if (stepRef.current >= total) {
-        clearInterval(id);
-        setPlaying(false);
-        return;
-      }
+      if (stepRef.current >= total) { clearInterval(id); setPlaying(false); return; }
       setStep(prev => prev + 1);
     }, delay);
     return () => clearInterval(id);
@@ -167,9 +124,6 @@ export default function SimulationPage() {
     if (step >= total) { setStep(0); setPlaying(true); return; }
     setPlaying(p => !p);
   };
-  const handlePrev = () => { stop(); setStep(s => Math.max(0, s - 1)); };
-  const handleNext = () => { stop(); setStep(s => Math.min(total, s + 1)); };
-  const handleReset = () => { stop(); setStep(0); };
 
   const submitPw = () => {
     if (pw === '123456') { setAuthed(true); setPwErr(''); }
@@ -182,30 +136,17 @@ export default function SimulationPage() {
         <Dialog open>
           <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5" /> 교사 전용 메뉴
-              </DialogTitle>
-              <DialogDescription>
-                비밀번호를 입력하세요.
-              </DialogDescription>
+              <DialogTitle className="flex items-center gap-2"><Lock className="h-5 w-5" /> 교사 전용 메뉴</DialogTitle>
+              <DialogDescription>비밀번호를 입력하세요.</DialogDescription>
             </DialogHeader>
             <div className="space-y-3 mt-2">
-              <Input
-                type="password"
-                placeholder="비밀번호"
-                value={pw}
+              <Input type="password" placeholder="비밀번호" value={pw}
                 onChange={e => { setPw(e.target.value); setPwErr(''); }}
-                onKeyDown={e => e.key === 'Enter' && submitPw()}
-                autoFocus
-              />
+                onKeyDown={e => e.key === 'Enter' && submitPw()} autoFocus />
               {pwErr && <p className="text-sm text-destructive">{pwErr}</p>}
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => router.push('/')}>
-                  취소
-                </Button>
-                <Button className="flex-1" onClick={submitPw}>
-                  확인
-                </Button>
+                <Button variant="outline" className="flex-1" onClick={() => router.push('/')}>취소</Button>
+                <Button className="flex-1" onClick={submitPw}>확인</Button>
               </div>
             </div>
           </DialogContent>
@@ -217,20 +158,14 @@ export default function SimulationPage() {
   return (
     <div className="min-h-screen p-4 bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-gray-900 dark:to-gray-800">
       <div className="max-w-3xl mx-auto space-y-4">
-        {/* Header */}
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon" onClick={() => router.push('/')}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+          <Button variant="outline" size="icon" onClick={() => router.push('/')}><ArrowLeft className="h-4 w-4" /></Button>
           <div>
             <h1 className="text-2xl font-bold">하노이타워 원리 시뮬레이션</h1>
-            <p className="text-sm text-muted-foreground">
-              교사 전용 · 원판 {TOTAL_DISKS}개 · 총 {total}번 이동
-            </p>
+            <p className="text-sm text-muted-foreground">교사 전용 · 원판 {TOTAL_DISKS}개 · 총 {total}번 이동</p>
           </div>
         </div>
 
-        {/* Progress */}
         <Card>
           <CardContent className="p-4">
             <div className="flex justify-between text-sm mb-1">
@@ -238,58 +173,32 @@ export default function SimulationPage() {
               <span className="font-semibold">{step} / {total}</span>
             </div>
             <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-700">
-              <div
-                className="h-2 rounded-full bg-primary transition-all duration-300"
-                style={{ width: `${(step / total) * 100}%` }}
-              />
+              <div className="h-2 rounded-full bg-primary transition-all duration-300" style={{ width: `${(step / total) * 100}%` }} />
             </div>
           </CardContent>
         </Card>
 
-        {/* Tower */}
         <Card>
-          <CardHeader className="pb-0">
-            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              탑 현황
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <TowerViz state={towerState} highlight={currentMove?.disk ?? null} />
+          <CardContent className="p-2">
+            <TowerSVG state={towerState} move={currentMove} step={step} />
           </CardContent>
         </Card>
 
-        {/* Caption */}
         <CaptionCard move={currentMove} step={step} total={total} />
 
-        {/* Controls */}
         <Card>
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center justify-center gap-2">
-              <Button variant="outline" size="icon" onClick={handleReset} title="처음으로">
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" onClick={handlePrev} disabled={step === 0} title="이전">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
+              <Button variant="outline" size="icon" onClick={() => { stop(); setStep(0); }}><RotateCcw className="h-4 w-4" /></Button>
+              <Button variant="outline" size="icon" onClick={() => { stop(); setStep(s => Math.max(0, s - 1)); }} disabled={step === 0}><ChevronLeft className="h-4 w-4" /></Button>
               <Button size="lg" className="px-8 min-w-36" onClick={handlePlayPause}>
-                {playing
-                  ? <><Pause className="h-5 w-5 mr-2" />일시정지</>
-                  : <><Play className="h-5 w-5 mr-2" />{step >= total ? '다시보기' : '재생'}</>}
+                {playing ? <><Pause className="h-5 w-5 mr-2" />일시정지</> : <><Play className="h-5 w-5 mr-2" />{step >= total ? '다시보기' : '재생'}</>}
               </Button>
-              <Button variant="outline" size="icon" onClick={handleNext} disabled={step >= total} title="다음">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              <Button variant="outline" size="icon" onClick={() => { stop(); setStep(s => Math.min(total, s + 1)); }} disabled={step >= total}><ChevronRight className="h-4 w-4" /></Button>
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground shrink-0">속도</span>
-              <Slider
-                value={[speedIdx]}
-                onValueChange={([v]) => setSpeedIdx(v)}
-                min={0}
-                max={SPEEDS.length - 1}
-                step={1}
-                className="flex-1"
-              />
+              <Slider value={[speedIdx]} onValueChange={([v]) => setSpeedIdx(v)} min={0} max={SPEEDS.length - 1} step={1} className="flex-1" />
               <span className="text-sm font-semibold w-8 text-right">{speed}x</span>
             </div>
           </CardContent>
@@ -299,58 +208,180 @@ export default function SimulationPage() {
   );
 }
 
-function TowerViz({ state, highlight }: { state: TowerState; highlight: number | null }) {
+// ── SVG Tower ─────────────────────────────────────────────
+function TowerSVG({ state, move, step }: { state: TowerState; move: SimMove | null; step: number }) {
   const pegs: Peg[] = ['A', 'B', 'C'];
-  const labels: Record<Peg, string> = { A: 'A (출발)', B: 'B (보조)', C: 'C (도착)' };
+  const isInitial = step === 0;
+  const isMain = move !== null && move.callStack.length === 1;
+  const isPost = move !== null && !isMain && move.callStack[0].phase === 'post';
+
+  const findDisk = (d: number): { peg: Peg; idx: number } | null => {
+    for (const p of pegs) { const i = state[p].indexOf(d); if (i !== -1) return { peg: p, idx: i }; }
+    return null;
+  };
+
+  const disk5OnC = state.C.includes(5);
+  const disk5Pos = findDisk(5);
+  const movingDisk = move?.disk ?? null;
+
+  // Arrow color by phase
+  const arrowColor = isMain ? '#ef4444' : isPost ? '#7c3aed' : '#6366f1';
+  const arrowId = isMain ? 'ah-red' : isPost ? 'ah-purple' : 'ah-indigo';
 
   return (
-    <div className="flex gap-2 justify-center py-2">
-      {pegs.map(peg => (
-        <div key={peg} className="flex-1 flex flex-col items-center">
-          <div className="relative flex flex-col items-center w-full">
-            {Array.from({ length: TOTAL_DISKS }, (_, i) => {
-              const disk = state[peg][TOTAL_DISKS - 1 - i];
-              return (
-                <div key={i} className="relative flex items-center justify-center w-full h-7">
-                  <div className="absolute w-1 h-full bg-gray-300 dark:bg-gray-600" />
-                  {disk !== undefined && (
-                    <div
-                      className={`relative z-10 h-5 rounded flex items-center justify-center text-white text-xs font-bold transition-all ${DISK_COLORS[disk]} ${disk === highlight ? 'ring-2 ring-white shadow-lg scale-105' : ''}`}
-                      style={{ width: DISK_WIDTH[disk] }}
-                    >
-                      {disk}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            <div className="w-full h-2 bg-gray-400 dark:bg-gray-500 rounded" />
-          </div>
-          <p className="text-xs text-muted-foreground mt-1 text-center">{labels[peg]}</p>
-        </div>
+    <svg viewBox={`0 0 ${VW} ${VH}`} className="w-full" style={{ maxHeight: '260px' }}>
+      <defs>
+        <marker id="ah-red" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+          <polygon points="0 0, 9 3.5, 0 7" fill="#ef4444" />
+        </marker>
+        <marker id="ah-indigo" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+          <polygon points="0 0, 9 3.5, 0 7" fill="#6366f1" />
+        </marker>
+        <marker id="ah-purple" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+          <polygon points="0 0, 9 3.5, 0 7" fill="#7c3aed" />
+        </marker>
+        <marker id="ah-blue" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+          <polygon points="0 0, 9 3.5, 0 7" fill="#3b82f6" />
+        </marker>
+      </defs>
+
+      {/* Peg poles */}
+      {pegs.map(p => (
+        <rect key={p} x={PEG_X[p] - 2} y={36} width={4} height={BASE_Y - 36} fill="#c1c8d4" rx={2} />
       ))}
-    </div>
+
+      {/* Peg bases */}
+      {pegs.map(p => (
+        <rect key={`b-${p}`} x={PEG_X[p] - 40} y={BASE_Y} width={80} height={5} fill="#9ca3af" rx={2} />
+      ))}
+
+      {/* INITIAL: blue dashed box around disks 1–4 */}
+      {isInitial && (() => {
+        const topY = dY(TOTAL_DISKS - 1) - 4;
+        const botY = dY(1) + DISK_RH + 4;
+        return (
+          <rect x={PEG_X.A - D_W[TOTAL_DISKS - 1] / 2 - 4} y={topY}
+            width={D_W[TOTAL_DISKS - 1] + 8} height={botY - topY}
+            fill="#dbeafe" fillOpacity={0.45} stroke="#3b82f6" strokeWidth={2}
+            strokeDasharray="5,3" rx={5} />
+        );
+      })()}
+
+      {/* Red dashed box: goal disk (disk 5) while it hasn't reached C */}
+      {!disk5OnC && disk5Pos && !isMain && (() => {
+        const { peg, idx } = disk5Pos;
+        return (
+          <rect x={dX(peg, 5) - 3} y={dY(idx) - 3}
+            width={D_W[5] + 6} height={DISK_RH + 6}
+            fill="#fee2e2" fillOpacity={0.5}
+            stroke="#ef4444" strokeWidth={2.5} strokeDasharray="5,3" rx={5} />
+        );
+      })()}
+
+      {/* Green box: disk 5 arrived at C */}
+      {disk5OnC && (() => {
+        const idx = state.C.indexOf(5);
+        return (
+          <rect x={dX('C', 5) - 3} y={dY(idx) - 3}
+            width={D_W[5] + 6} height={DISK_RH + 6}
+            fill="#d1fae5" fillOpacity={0.55}
+            stroke="#10b981" strokeWidth={2.5} rx={5} />
+        );
+      })()}
+
+      {/* Disks */}
+      {pegs.map(p =>
+        state[p].map((d, idx) => {
+          // Highlight the disk that just moved (now at top of destination peg)
+          const justMoved = movingDisk === d && move?.to === p && idx === state[p].length - 1;
+          const x = dX(p, d);
+          const y = dY(idx);
+          const w = D_W[d];
+          return (
+            <g key={`${p}-${d}`}>
+              <rect x={x} y={y} width={w} height={DISK_RH} fill={D_FILL[d]} rx={3} />
+              {justMoved && (
+                <rect x={x - 3} y={y - 3} width={w + 6} height={DISK_RH + 6}
+                  fill="none" stroke="white" strokeWidth={2.5} rx={5} />
+              )}
+              <text x={PEG_X[p]} y={y + DISK_RH / 2} textAnchor="middle"
+                dominantBaseline="middle" fill="white" fontSize={10} fontWeight="bold">
+                {d}
+              </text>
+            </g>
+          );
+        })
+      )}
+
+      {/* Move arrow (curved, above tower) */}
+      {move && move.from !== move.to && (() => {
+        const fx = PEG_X[move.from];
+        const tx = PEG_X[move.to];
+        const mx = (fx + tx) / 2;
+        return (
+          <path d={`M ${fx} 28 Q ${mx} 8 ${tx} 28`}
+            fill="none" stroke={arrowColor} strokeWidth={isMain ? 3 : 2}
+            strokeLinecap="round" markerEnd={`url(#${arrowId})`} />
+        );
+      })()}
+
+      {/* INITIAL: two concept arrows */}
+      {isInitial && (
+        <>
+          {/* Blue dashed: disks 1–4 → B temporarily */}
+          <path d={`M ${PEG_X.A} 22 Q ${(PEG_X.A + PEG_X.B) / 2} 6 ${PEG_X.B} 22`}
+            fill="none" stroke="#3b82f6" strokeWidth={2} strokeDasharray="5,3"
+            strokeLinecap="round" markerEnd="url(#ah-blue)" />
+          {/* Red: disk 5 → C (the goal) */}
+          <path d={`M ${PEG_X.A} 29 Q ${(PEG_X.A + PEG_X.C) / 2} 10 ${PEG_X.C} 29`}
+            fill="none" stroke="#ef4444" strokeWidth={2.5}
+            strokeLinecap="round" markerEnd="url(#ah-red)" />
+          {/* Labels at arrow tips */}
+          <text x={PEG_X.B} y={16} textAnchor="middle" fill="#3b82f6" fontSize={9} fontWeight="bold">먼저</text>
+          <text x={PEG_X.C} y={16} textAnchor="middle" fill="#ef4444" fontSize={9} fontWeight="bold">목표</text>
+        </>
+      )}
+
+      {/* MAIN event label */}
+      {isMain && (
+        <text x={(PEG_X[move!.from] + PEG_X[move!.to]) / 2} y={18}
+          textAnchor="middle" fill="#ef4444" fontSize={10} fontWeight="bold">
+          드디어 이동!
+        </text>
+      )}
+
+      {/* Peg labels */}
+      {([['A', '출발'], ['B', '보조'], ['C', '도착']] as [Peg, string][]).map(([p, lbl]) => (
+        <text key={`lbl-${p}`} x={PEG_X[p as Peg]} y={VH - 4}
+          textAnchor="middle" fill="#6b7280" fontSize={10}>
+          {p} ({lbl})
+        </text>
+      ))}
+    </svg>
   );
 }
 
+// ── Caption card ──────────────────────────────────────────
 function CaptionCard({ move, step, total }: { move: SimMove | null; step: number; total: number }) {
   if (step === 0) {
     return (
       <Card>
         <CardContent className="p-4 space-y-2 text-sm">
-          <p className="font-semibold">핵심 원리</p>
-          <p>원판 5번(가장 큰 판)을 C로 옮기려면?</p>
-          <p className="text-muted-foreground">→ 위의 원판 4개를 먼저 B로 치워야 합니다.</p>
-          <p className="text-muted-foreground">→ 그 4개를 치우려면? 또 그 위를 먼저 치워야 합니다.</p>
-          <p className="text-muted-foreground">→ 이 과정이 계속 반복됩니다.</p>
-          <p className="font-medium pt-1">▶ 버튼을 눌러 확인하세요.</p>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 shrink-0 rounded border-2 border-dashed border-red-400 bg-red-50" />
+            <span><b>빨간 점선:</b> 꺼내야 할 원판 (최종 목표)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 shrink-0 rounded border-2 border-dashed border-blue-400 bg-blue-50" />
+            <span><b>파란 점선:</b> 먼저 다른 기둥으로 치워야 할 원판들</span>
+          </div>
+          <p className="text-muted-foreground pt-1 text-xs">▶ 재생 버튼을 눌러 단계별로 확인하세요.</p>
         </CardContent>
       </Card>
     );
   }
 
   if (!move) return null;
-
   const { badge, badgeStyle, text } = getCaption(move);
 
   return (
@@ -358,7 +389,7 @@ function CaptionCard({ move, step, total }: { move: SimMove | null; step: number
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex flex-wrap items-center gap-2">
           <span>이동 {move.step}/{total}: 원판 {move.disk}번</span>
-          <span className="text-muted-foreground font-normal">{move.from} → {move.to}</span>
+          <span className="text-muted-foreground font-normal text-sm">{move.from} → {move.to}</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
