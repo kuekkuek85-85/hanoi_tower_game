@@ -108,6 +108,7 @@ export default function SimulationPage() {
   const speed = SPEEDS[speedIdx];
   const towerState = calcState(step);
   const currentMove = step > 0 ? ALL_MOVES[step - 1] : null;
+  const disk5OnC = towerState.C.includes(5);
 
   useEffect(() => {
     if (!playing) return;
@@ -180,11 +181,11 @@ export default function SimulationPage() {
 
         <Card>
           <CardContent className="p-2">
-            <TowerSVG state={towerState} move={currentMove} step={step} />
+            <TowerSVG state={towerState} move={currentMove} step={step} disk5OnC={disk5OnC} />
           </CardContent>
         </Card>
 
-        <CaptionCard move={currentMove} step={step} total={total} />
+        <CaptionCard move={currentMove} step={step} total={total} disk5OnC={disk5OnC} />
 
         <Card>
           <CardContent className="p-4 space-y-4">
@@ -209,7 +210,9 @@ export default function SimulationPage() {
 }
 
 // ── SVG Tower ─────────────────────────────────────────────
-function TowerSVG({ state, move, step }: { state: TowerState; move: SimMove | null; step: number }) {
+function TowerSVG({ state, move, step, disk5OnC }: {
+  state: TowerState; move: SimMove | null; step: number; disk5OnC: boolean;
+}) {
   const pegs: Peg[] = ['A', 'B', 'C'];
   const isInitial = step === 0;
   const isMain = move !== null && move.callStack.length === 1;
@@ -220,11 +223,9 @@ function TowerSVG({ state, move, step }: { state: TowerState; move: SimMove | nu
     return null;
   };
 
-  const disk5OnC = state.C.includes(5);
   const disk5Pos = findDisk(5);
   const movingDisk = move?.disk ?? null;
 
-  // Arrow color by phase
   const arrowColor = isMain ? '#ef4444' : isPost ? '#7c3aed' : '#6366f1';
   const arrowId = isMain ? 'ah-red' : isPost ? 'ah-purple' : 'ah-indigo';
 
@@ -243,13 +244,16 @@ function TowerSVG({ state, move, step }: { state: TowerState; move: SimMove | nu
         <marker id="ah-blue" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
           <polygon points="0 0, 9 3.5, 0 7" fill="#3b82f6" />
         </marker>
+        {/* Diagonal hatch for frozen disk 5 */}
+        <pattern id="hatch-gray" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="5" stroke="#6b7280" strokeWidth="1.5" />
+        </pattern>
       </defs>
 
       {/* Peg poles */}
       {pegs.map(p => (
         <rect key={p} x={PEG_X[p] - 2} y={36} width={4} height={BASE_Y - 36} fill="#c1c8d4" rx={2} />
       ))}
-
       {/* Peg bases */}
       {pegs.map(p => (
         <rect key={`b-${p}`} x={PEG_X[p] - 40} y={BASE_Y} width={80} height={5} fill="#9ca3af" rx={2} />
@@ -267,7 +271,7 @@ function TowerSVG({ state, move, step }: { state: TowerState; move: SimMove | nu
         );
       })()}
 
-      {/* Red dashed box: goal disk (disk 5) while it hasn't reached C */}
+      {/* Red dashed box: disk 5 target (before it reaches C) */}
       {!disk5OnC && disk5Pos && !isMain && (() => {
         const { peg, idx } = disk5Pos;
         return (
@@ -278,34 +282,77 @@ function TowerSVG({ state, move, step }: { state: TowerState; move: SimMove | nu
         );
       })()}
 
-      {/* Green box: disk 5 arrived at C */}
+      {/* Locked green box: disk 5 done on C */}
       {disk5OnC && (() => {
         const idx = state.C.indexOf(5);
         return (
-          <rect x={dX('C', 5) - 3} y={dY(idx) - 3}
-            width={D_W[5] + 6} height={DISK_RH + 6}
-            fill="#d1fae5" fillOpacity={0.55}
-            stroke="#10b981" strokeWidth={2.5} rx={5} />
+          <>
+            <rect x={dX('C', 5) - 3} y={dY(idx) - 3}
+              width={D_W[5] + 6} height={DISK_RH + 6}
+              fill="#d1fae5" fillOpacity={0.55}
+              stroke="#10b981" strokeWidth={2.5} rx={5} />
+            {/* "완료" badge above disk 5 */}
+            <rect x={PEG_X.C - 14} y={dY(idx) - 18} width={28} height={12} fill="#10b981" rx={3} />
+            <text x={PEG_X.C} y={dY(idx) - 10} textAnchor="middle"
+              fill="white" fontSize={8} fontWeight="bold">완료 ✓</text>
+          </>
         );
       })()}
+
+      {/* Amber dashed boxes: disks 1–4 sub-problem (after disk 5 is done) */}
+      {disk5OnC && pegs.map(p => {
+        const subs = state[p].filter(d => d >= 1 && d <= 4);
+        if (subs.length === 0) return null;
+        const indices = subs.map(d => state[p].indexOf(d));
+        const topIdx = Math.max(...indices);
+        const botIdx = Math.min(...indices);
+        const maxW = Math.max(...subs.map(d => D_W[d]));
+        const bx = PEG_X[p] - maxW / 2 - 6;
+        const by = dY(topIdx) - 5;
+        const bw = maxW + 12;
+        const bh = dY(botIdx) + DISK_RH + 5 - by + 6;
+        const lblW = 66;
+        const lblX = bx + (bw - lblW) / 2;
+        const lblY = by - 14;
+        return (
+          <g key={`sub-${p}`}>
+            <rect x={bx} y={by} width={bw} height={bh}
+              fill="#fef3c7" fillOpacity={0.45}
+              stroke="#f59e0b" strokeWidth={2} strokeDasharray="5,3" rx={5} />
+            {/* Badge tab above box */}
+            <rect x={lblX} y={lblY} width={lblW} height={12} fill="#f59e0b" rx={3} />
+            <text x={lblX + lblW / 2} y={lblY + 8.5} textAnchor="middle"
+              fill="white" fontSize={7.5} fontWeight="bold">
+              {subs.length}개를 옮기는 문제
+            </text>
+          </g>
+        );
+      })}
 
       {/* Disks */}
       {pegs.map(p =>
         state[p].map((d, idx) => {
-          // Highlight the disk that just moved (now at top of destination peg)
+          const isFrozen = d === 5 && disk5OnC;
           const justMoved = movingDisk === d && move?.to === p && idx === state[p].length - 1;
           const x = dX(p, d);
           const y = dY(idx);
           const w = D_W[d];
+          const fill = isFrozen ? '#9ca3af' : D_FILL[d];
           return (
             <g key={`${p}-${d}`}>
-              <rect x={x} y={y} width={w} height={DISK_RH} fill={D_FILL[d]} rx={3} />
-              {justMoved && (
+              <rect x={x} y={y} width={w} height={DISK_RH} fill={fill} rx={3} />
+              {/* Diagonal hatch for frozen disk 5 */}
+              {isFrozen && (
+                <rect x={x} y={y} width={w} height={DISK_RH}
+                  fill="url(#hatch-gray)" rx={3} opacity={0.35} />
+              )}
+              {justMoved && !isFrozen && (
                 <rect x={x - 3} y={y - 3} width={w + 6} height={DISK_RH + 6}
                   fill="none" stroke="white" strokeWidth={2.5} rx={5} />
               )}
               <text x={PEG_X[p]} y={y + DISK_RH / 2} textAnchor="middle"
-                dominantBaseline="middle" fill="white" fontSize={10} fontWeight="bold">
+                dominantBaseline="middle"
+                fill={isFrozen ? '#374151' : 'white'} fontSize={10} fontWeight="bold">
                 {d}
               </text>
             </g>
@@ -313,7 +360,7 @@ function TowerSVG({ state, move, step }: { state: TowerState; move: SimMove | nu
         })
       )}
 
-      {/* Move arrow (curved, above tower) */}
+      {/* Move arrow */}
       {move && move.from !== move.to && (() => {
         const fx = PEG_X[move.from];
         const tx = PEG_X[move.to];
@@ -328,15 +375,12 @@ function TowerSVG({ state, move, step }: { state: TowerState; move: SimMove | nu
       {/* INITIAL: two concept arrows */}
       {isInitial && (
         <>
-          {/* Blue dashed: disks 1–4 → B temporarily */}
           <path d={`M ${PEG_X.A} 22 Q ${(PEG_X.A + PEG_X.B) / 2} 6 ${PEG_X.B} 22`}
             fill="none" stroke="#3b82f6" strokeWidth={2} strokeDasharray="5,3"
             strokeLinecap="round" markerEnd="url(#ah-blue)" />
-          {/* Red: disk 5 → C (the goal) */}
           <path d={`M ${PEG_X.A} 29 Q ${(PEG_X.A + PEG_X.C) / 2} 10 ${PEG_X.C} 29`}
             fill="none" stroke="#ef4444" strokeWidth={2.5}
             strokeLinecap="round" markerEnd="url(#ah-red)" />
-          {/* Labels at arrow tips */}
           <text x={PEG_X.B} y={16} textAnchor="middle" fill="#3b82f6" fontSize={9} fontWeight="bold">먼저</text>
           <text x={PEG_X.C} y={16} textAnchor="middle" fill="#ef4444" fontSize={9} fontWeight="bold">목표</text>
         </>
@@ -362,7 +406,9 @@ function TowerSVG({ state, move, step }: { state: TowerState; move: SimMove | nu
 }
 
 // ── Caption card ──────────────────────────────────────────
-function CaptionCard({ move, step, total }: { move: SimMove | null; step: number; total: number }) {
+function CaptionCard({ move, step, total, disk5OnC }: {
+  move: SimMove | null; step: number; total: number; disk5OnC: boolean;
+}) {
   if (step === 0) {
     return (
       <Card>
@@ -384,6 +430,9 @@ function CaptionCard({ move, step, total }: { move: SimMove | null; step: number
   if (!move) return null;
   const { badge, badgeStyle, text } = getCaption(move);
 
+  // Step 16: disk 5 just moved to C — problem reduced
+  const justReduced = move.disk === 5 && move.callStack.length === 1;
+
   return (
     <Card className="border-2 border-primary/30">
       <CardHeader className="pb-2">
@@ -397,6 +446,27 @@ function CaptionCard({ move, step, total }: { move: SimMove | null; step: number
           {badge}
         </span>
         <p className="text-sm">{text}</p>
+
+        {/* Problem-reduction banner */}
+        {justReduced && (
+          <div className="mt-2 p-2 rounded-lg bg-amber-50 border border-amber-300 dark:bg-amber-900/30 dark:border-amber-600">
+            <p className="text-sm font-bold text-amber-700 dark:text-amber-300">
+              🎯 문제가 줄었습니다!
+            </p>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+              5개 이동 문제 → <b>4개 이동 문제</b>로 축소됐습니다.
+              이제 원판 1~4번만 C로 옮기면 끝!
+            </p>
+          </div>
+        )}
+        {disk5OnC && !justReduced && (
+          <div className="flex items-center gap-2 mt-1 p-1.5 rounded bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-700">
+            <div className="w-3 h-3 shrink-0 rounded border-2 border-dashed border-amber-400 bg-amber-100" />
+            <span className="text-xs text-amber-700 dark:text-amber-300">
+              주황 박스 = 이제 <b>4개를 옮기는 문제</b> / 회색 원판 5번 = 완료·고정
+            </span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
