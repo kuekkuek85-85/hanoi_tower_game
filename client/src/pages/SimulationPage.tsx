@@ -299,35 +299,6 @@ function TowerSVG({ state, move, step, disk5OnC }: {
         );
       })()}
 
-      {/* Amber dashed boxes: disks 1–4 sub-problem (after disk 5 is done) */}
-      {disk5OnC && pegs.map(p => {
-        const subs = state[p].filter(d => d >= 1 && d <= 4);
-        if (subs.length === 0) return null;
-        const indices = subs.map(d => state[p].indexOf(d));
-        const topIdx = Math.max(...indices);
-        const botIdx = Math.min(...indices);
-        const maxW = Math.max(...subs.map(d => D_W[d]));
-        const bx = PEG_X[p] - maxW / 2 - 6;
-        const by = dY(topIdx) - 5;
-        const bw = maxW + 12;
-        const bh = dY(botIdx) + DISK_RH + 5 - by + 6;
-        const lblW = 66;
-        const lblX = bx + (bw - lblW) / 2;
-        const lblY = by - 14;
-        return (
-          <g key={`sub-${p}`}>
-            <rect x={bx} y={by} width={bw} height={bh}
-              fill="#fef3c7" fillOpacity={0.45}
-              stroke="#f59e0b" strokeWidth={2} strokeDasharray="5,3" rx={5} />
-            {/* Badge tab above box */}
-            <rect x={lblX} y={lblY} width={lblW} height={12} fill="#f59e0b" rx={3} />
-            <text x={lblX + lblW / 2} y={lblY + 8.5} textAnchor="middle"
-              fill="white" fontSize={7.5} fontWeight="bold">
-              {subs.length}개를 옮기는 문제
-            </text>
-          </g>
-        );
-      })}
 
       {/* Disks */}
       {pegs.map(p =>
@@ -457,14 +428,6 @@ function CaptionCard({ move, step, total, disk5OnC }: {
               5개 이동 문제 → <b>4개 이동 문제</b>로 축소됐습니다.
               이제 원판 1~4번만 C로 옮기면 끝!
             </p>
-          </div>
-        )}
-        {disk5OnC && !justReduced && (
-          <div className="flex items-center gap-2 mt-1 p-1.5 rounded bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-700">
-            <div className="w-3 h-3 shrink-0 rounded border-2 border-dashed border-amber-400 bg-amber-100" />
-            <span className="text-xs text-amber-700 dark:text-amber-300">
-              주황 박스 = 이제 <b>4개를 옮기는 문제</b> / 회색 원판 5번 = 완료·고정
-            </span>
           </div>
         )}
       </CardContent>
