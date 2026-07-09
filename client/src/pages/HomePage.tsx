@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { StartScreen } from '@/components/StartScreen';
 import { GameScreen } from '@/components/GameScreen';
+import { WelcomeModal } from '@/components/WelcomeModal';
 
 export default function HomePage() {
   const [gameStarted, setGameStarted] = useState(false);
@@ -33,5 +34,10 @@ export default function HomePage() {
     );
   }
 
-  return <StartScreen onStartGame={handleStartGame} />;
+  return (
+    <>
+      <WelcomeModal />
+      <StartScreen onStartGame={handleStartGame} />
+    </>
+  );
 }
