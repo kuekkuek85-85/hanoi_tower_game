@@ -231,32 +231,39 @@ function Slide2() {
       <div className="flex gap-4 justify-center pt-1">
         {/* 가능 */}
         <div className="flex flex-col items-center gap-1">
-          <svg viewBox="0 0 70 60" className="w-20">
-            <rect x="31" y="0" width="4" height="56" fill="#c1c8d4" rx="2" />
-            <rect x="5"  y="0" width="56" height="6" fill="#9ca3af" rx="2" />
-            <rect x="14" y="29" width="38" height="12" fill="#fb923c" rx="3" />
-            <rect x="22" y="16" width="22" height="12" fill="#fbbf24" rx="3" />
+          <svg viewBox="0 0 70 62" className="w-20">
+            {/* 바닥 */}
+            <rect x="5"  y="56" width="60" height="6" fill="#9ca3af" rx="2" />
+            {/* 기둥 */}
+            <rect x="31" y="4"  width="4" height="52" fill="#c1c8d4" rx="2" />
+            {/* 큰 원판 (아래) */}
+            <rect x="14" y="42" width="42" height="13" fill="#fb923c" rx="3" />
+            {/* 작은 원판 (위) */}
+            <rect x="23" y="28" width="24" height="13" fill="#fbbf24" rx="3" />
           </svg>
           <span className="text-xs font-semibold text-green-600">✅ 가능</span>
-          <span className="text-[10px] text-gray-500 text-center">작은 판 위에<br/>큰 판 ❌</span>
+          <span className="text-[10px] text-gray-500 text-center">작은 판 →<br/>큰 판 위에</span>
         </div>
 
         <div className="w-px bg-gray-200 dark:bg-gray-700 self-stretch" />
 
         {/* 불가 */}
         <div className="flex flex-col items-center gap-1">
-          <svg viewBox="0 0 70 60" className="w-20">
-            <rect x="31" y="0" width="4" height="56" fill="#c1c8d4" rx="2" />
-            <rect x="5"  y="0" width="56" height="6" fill="#9ca3af" rx="2" />
-            <rect x="22" y="29" width="22" height="12" fill="#fbbf24" rx="3" />
-            {/* 빨간 큰 판 (떨어지려는 모습) */}
-            <rect x="14" y="14" width="38" height="12" fill="#f87171" rx="3" opacity="0.6" />
+          <svg viewBox="0 0 70 62" className="w-20">
+            {/* 바닥 */}
+            <rect x="5"  y="56" width="60" height="6" fill="#9ca3af" rx="2" />
+            {/* 기둥 */}
+            <rect x="31" y="4"  width="4" height="52" fill="#c1c8d4" rx="2" />
+            {/* 작은 원판 (아래) */}
+            <rect x="23" y="42" width="24" height="13" fill="#fbbf24" rx="3" />
+            {/* 큰 원판 (위에 올리려는 중 — 반투명) */}
+            <rect x="14" y="28" width="42" height="13" fill="#f87171" rx="3" opacity="0.6" />
             {/* X 표시 */}
-            <line x1="14" y1="14" x2="52" y2="26" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round" />
-            <line x1="52" y1="14" x2="14" y2="26" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round" />
+            <line x1="18" y1="30" x2="52" y2="40" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round" />
+            <line x1="52" y1="30" x2="18" y2="40" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round" />
           </svg>
           <span className="text-xs font-semibold text-red-600">❌ 불가</span>
-          <span className="text-[10px] text-gray-500 text-center">큰 판을 작은<br/>판 위에 올리기</span>
+          <span className="text-[10px] text-gray-500 text-center">큰 판 →<br/>작은 판 위에</span>
         </div>
       </div>
     </div>
