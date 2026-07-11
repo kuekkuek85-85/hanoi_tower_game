@@ -33,7 +33,7 @@ export default function LeaderboardPage() {
 
   const { data: allRecords = [], isLoading, error, refetch } = useQuery<HanoiRecord[]>({
     queryKey: ['/api/records'],
-    enabled: true,
+    refetchInterval: 5000,
   });
 
   const optimalRecords = useMemo(() => {
