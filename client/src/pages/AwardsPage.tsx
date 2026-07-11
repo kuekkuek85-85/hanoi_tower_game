@@ -75,86 +75,130 @@ interface SpecialAward {
   gradient: string;
 }
 
-function computeAwards(map: Map<string, StudentSummary>): SpecialAward[] {
+// 1등 수상자가 특별상에 중복으로 몰리지 않도록, top1을 제외한 후보 중 선발
+// 대체자가 없을 때만 top1에게도 수여
+function pickWinner(
+  sorted: StudentSummary[],
+  top1Id: string
+): StudentSummary | null {
+  if (sorted.length === 0) return null;
+  const nonTop1 = sorted.filter(s => s.studentId !== top1Id);
+  return nonTop1.length > 0 ? nonTop1[0] : sorted[0];
+}
+
+function computeAwards(map: Map<string, StudentSummary>, top1Id: string): SpecialAward[] {
   const students = Array.from(map.values());
   if (students.length === 0) return [];
 
   const awards: SpecialAward[] = [];
 
-  // 1. 📈 성장왕: 첫 시도 대비 같은 원판 수 최고 기록 이동수 개선율 최대
+  // 1. 📈 성장왕: 같은 원판 수 기준 최악 기록 → 최고 기록 이동수 차이 최대
   {
-    let best = 0;
-    let winner: StudentSummary | null = null;
-    let detail = '';
+    type Entry = { s: StudentSummary; gap: number; worstMoves: number; bestMoves: number; disks: number };
+    const entries: Entry[] = [];
     students.forEach(s => {
       if (s.attempts < 2) return;
-      const sorted = [...s.allRecords].sort((a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      );
-      const first = sorted[0];
-      const sameDisks = s.allRecords.filter(r => r.disks === first.disks && r.id !== first.id);
-      if (sameDisks.length === 0) return;
-      const bestSame = sameDisks.reduce((a, b) => a.moves < b.moves ? a : b);
-      if (first.moves <= minMoves(first.disks)) return;
-      const rate = (first.moves - bestSame.moves) / first.moves;
-      if (rate > best) {
-        best = rate;
-        winner = s;
-        detail = `처음 ${first.moves}회 → 최고 ${bestSame.moves}회 (${Math.round(rate * 100)}% 개선!)`;
-      }
+      // 원판 수별로 그룹
+      const byDisks = new Map<number, HanoiRecord[]>();
+      s.allRecords.forEach(r => {
+        const list = byDisks.get(r.disks) ?? [];
+        list.push(r);
+        byDisks.set(r.disks, list);
+      });
+      byDisks.forEach((recs, disks) => {
+        if (recs.length < 2) return;
+        const worstMoves = Math.max(...recs.map(r => r.moves));
+        const bestMoves  = Math.min(...recs.map(r => r.moves));
+        const gap = worstMoves - bestMoves;
+        if (gap > 0) entries.push({ s, gap, worstMoves, bestMoves, disks });
+      });
     });
-    if (winner) {
-      awards.push({ icon: '📈', title: '성장왕', subtitle: '처음보다 가장 크게 성장!',
-        studentName: (winner as StudentSummary).studentName, detail, gradient: 'from-emerald-400 to-green-500' });
+    entries.sort((a, b) => b.gap - a.gap);
+    // 학생 중복 제거(한 학생의 최대 gap만 남김)
+    const seen = new Set<string>();
+    const unique: Entry[] = [];
+    entries.forEach(e => { if (!seen.has(e.s.studentId)) { seen.add(e.s.studentId); unique.push(e); } });
+    const top = unique.filter(e => e.s.studentId !== top1Id)[0] ?? unique[0];
+    if (top) {
+      awards.push({
+        icon: '📈', title: '성장왕', subtitle: '가장 크게 실력이 늘었어요!',
+        studentName: top.s.studentName,
+        detail: `원판 ${top.disks}개: ${top.worstMoves}회 → ${top.bestMoves}회 (${top.gap}회 개선!)`,
+        gradient: 'from-emerald-400 to-green-500',
+      });
     }
   }
 
-  // 2. 💪 끈기왕: 시도 횟수 최다
+  // 2. 💪 끈기왕: 총 게임 횟수 최다
   {
-    const w = students.reduce((a, b) => a.attempts > b.attempts ? a : b);
-    if (w.attempts >= 2) {
-      awards.push({ icon: '💪', title: '끈기왕', subtitle: '포기를 모르는 정신력!',
-        studentName: w.studentName, detail: `총 ${w.attempts}번 도전!`, gradient: 'from-orange-400 to-red-500' });
+    const sorted = [...students].sort((a, b) => b.attempts - a.attempts);
+    const w = pickWinner(sorted.filter(s => s.attempts >= 2), top1Id);
+    if (w) {
+      awards.push({
+        icon: '💪', title: '끈기왕', subtitle: '포기를 모르는 정신력!',
+        studentName: w.studentName, detail: `총 ${w.attempts}번 도전!`,
+        gradient: 'from-orange-400 to-red-500',
+      });
     }
   }
 
-  // 3. ⚡ 속도왕: 최고 원판 수 기준 가장 빠른 완성
+  // 3. ⚡ 속도왕: 원판 3개 최속 완성
   {
-    const maxD = Math.max(...students.map(s => s.bestRecord.disks));
-    const pool = students.filter(s => s.bestRecord.disks === maxD);
-    const getFastest = (s: StudentSummary) =>
-      Math.min(...s.allRecords.filter(r => r.disks === maxD).map(r => r.seconds));
-    const w = pool.reduce((a, b) => getFastest(a) < getFastest(b) ? a : b);
-    awards.push({ icon: '⚡', title: '속도왕', subtitle: `원판 ${maxD}개 최속 완성!`,
-      studentName: w.studentName, detail: `${fmtTime(getFastest(w))} 만에 완성!`, gradient: 'from-yellow-400 to-amber-500' });
+    type T3 = { s: StudentSummary; sec: number };
+    const pool: T3[] = [];
+    students.forEach(s => {
+      const recs3 = s.allRecords.filter(r => r.disks === 3);
+      if (recs3.length === 0) return;
+      pool.push({ s, sec: Math.min(...recs3.map(r => r.seconds)) });
+    });
+    pool.sort((a, b) => a.sec - b.sec);
+    const top = pool.filter(e => e.s.studentId !== top1Id)[0] ?? pool[0];
+    if (top) {
+      awards.push({
+        icon: '⚡', title: '속도왕', subtitle: '원판 3개 가장 빠르게 완성!',
+        studentName: top.s.studentName, detail: `${fmtTime(top.sec)} 만에 완성!`,
+        gradient: 'from-yellow-400 to-amber-500',
+      });
+    }
   }
 
-  // 4. 🏔️ 도전왕: 가장 높은 원판 수 달성
+  // 4. ⏱️ 집중왕: 원판 5개 이하 중 단일 게임 최장 시간
   {
-    const w = students.reduce((a, b) => a.bestRecord.disks > b.bestRecord.disks ? a : b);
-    awards.push({ icon: '🏔️', title: '도전왕', subtitle: '가장 어려운 단계 도전!',
-      studentName: w.studentName, detail: `원판 ${w.bestRecord.disks}개 달성!`, gradient: 'from-purple-400 to-violet-500' });
+    type T5 = { s: StudentSummary; sec: number; disks: number };
+    const pool: T5[] = [];
+    students.forEach(s => {
+      const recsLE5 = s.allRecords.filter(r => r.disks <= 5);
+      if (recsLE5.length === 0) return;
+      const longest = recsLE5.reduce((a, b) => a.seconds > b.seconds ? a : b);
+      pool.push({ s, sec: longest.seconds, disks: longest.disks });
+    });
+    pool.sort((a, b) => b.sec - a.sec);
+    const top = pool.filter(e => e.s.studentId !== top1Id)[0] ?? pool[0];
+    if (top) {
+      awards.push({
+        icon: '⏱️', title: '집중왕', subtitle: '원판 5개 이하에서 가장 오래 집중!',
+        studentName: top.s.studentName,
+        detail: `원판 ${top.disks}개에서 ${fmtTime(top.sec)} 동안 집중!`,
+        gradient: 'from-blue-400 to-cyan-500',
+      });
+    }
   }
 
-  // 5. ⏱️ 집중왕: 누적 플레이 시간 최다
-  {
-    const w = students.reduce((a, b) => a.totalSeconds > b.totalSeconds ? a : b);
-    const min = Math.floor(w.totalSeconds / 60);
-    awards.push({ icon: '⏱️', title: '집중왕', subtitle: '끝까지 포기 않고 집중!',
-      studentName: w.studentName, detail: `누적 ${min}분 이상 플레이!`, gradient: 'from-blue-400 to-cyan-500' });
-  }
-
-  // 6. 🎯 정확왕: 최소 이동수 달성 (4개 이상 원판에서 최적해)
+  // 5. 🎯 정확왕: 최소 이동수 달성자 중 가장 높은 원판 수
   {
     const perfect = students.filter(s =>
-      s.allRecords.some(r => r.moves === minMoves(r.disks) && r.disks >= 4)
+      s.allRecords.some(r => r.moves === minMoves(r.disks))
     );
     if (perfect.length > 0) {
-      const getMaxPerfect = (s: StudentSummary) =>
+      const getMax = (s: StudentSummary) =>
         Math.max(...s.allRecords.filter(r => r.moves === minMoves(r.disks)).map(r => r.disks));
-      const w = perfect.reduce((a, b) => getMaxPerfect(a) > getMaxPerfect(b) ? a : b);
-      awards.push({ icon: '🎯', title: '정확왕', subtitle: '완벽한 최소 이동 달성!',
-        studentName: w.studentName, detail: `원판 ${getMaxPerfect(w)}개를 최소 이동으로!`, gradient: 'from-pink-400 to-rose-500' });
+      const sorted = [...perfect].sort((a, b) => getMax(b) - getMax(a));
+      const w = sorted.filter(s => s.studentId !== top1Id)[0] ?? sorted[0];
+      awards.push({
+        icon: '🎯', title: '정확왕', subtitle: '완벽한 최소 이동 달성!',
+        studentName: w.studentName, detail: `원판 ${getMax(w)}개를 최소 이동으로 완성!`,
+        gradient: 'from-pink-400 to-rose-500',
+      });
     }
   }
 
@@ -186,7 +230,8 @@ export default function AwardsPage() {
     [summaries]
   );
 
-  const specialAwards = useMemo(() => computeAwards(summaries), [summaries]);
+  const top1Id = top10[0]?.studentId ?? '';
+  const specialAwards = useMemo(() => computeAwards(summaries, top1Id), [summaries, top1Id]);
 
   if (isLoading) {
     return (
