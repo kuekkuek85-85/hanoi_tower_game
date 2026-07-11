@@ -1,7 +1,9 @@
 import { GameHeader } from './GameHeader';
 import { GameBoard } from './GameBoard';
 import { WinModal } from './WinModal';
+import { LiveSidebar } from './LiveSidebar';
 import { useHanoiGame } from '@/hooks/useHanoiGame';
+import { useGameSession } from '@/hooks/useGameSession';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useCallback } from 'react';
 
@@ -23,34 +25,30 @@ export function GameScreen({ studentId, studentName, disks, onBackToStart }: Gam
     getGameStats,
     calculateMinMoves,
   } = useHanoiGame();
-  
+
   const { toast } = useToast();
 
-  // Initialize game
+  // 실시간 세션 추적
+  useGameSession(
+    studentId,
+    studentName,
+    gameState.disks,
+    gameState.moves,
+    gameState.completed,
+    gameState.startedAt,
+  );
+
   useEffect(() => {
     initializeGame(studentId, studentName, disks);
   }, [studentId, studentName, disks, initializeGame]);
 
-  // Toggle body class for scroll lock during game mode
   useEffect(() => {
-    // Add game-mode class when GameScreen mounts
     document.body.classList.add('game-mode');
-    
-    // Remove game-mode class when GameScreen unmounts
     return () => {
       document.body.classList.remove('game-mode');
     };
   }, []);
 
-  const handleBackToStart = () => {
-    onBackToStart();
-  };
-
-  const handlePlayAgain = () => {
-    restartGame();
-  };
-  
-  // 되돌리기 처리 함수 (피드백 포함)
   const handleUndo = useCallback(() => {
     if (gameState.history.length === 0) {
       toast({
@@ -60,10 +58,10 @@ export function GameScreen({ studentId, studentName, disks, onBackToStart }: Gam
       });
       return;
     }
-    
+
     const lastMove = gameState.history[gameState.history.length - 1];
     const success = undoMove();
-    
+
     if (success) {
       toast({
         title: '이동 되돌리기 성공',
@@ -82,30 +80,31 @@ export function GameScreen({ studentId, studentName, disks, onBackToStart }: Gam
   const gameStats = getGameStats();
 
   return (
-    <div className="game-container" data-testid="game-screen">
-      <GameHeader
-        gameState={gameState}
-        minMoves={minMoves}
-        onUndo={handleUndo}
-        onRestart={restartGame}
-        onBackToStart={handleBackToStart}
-      />
-      
-      <GameBoard
-        towers={gameState.towers}
-        onMove={moveDisk}
-        canMove={(from, to) => canMoveDisk(from, to, gameState.towers)}
-        isGameActive={gameState.isGameActive}
-      />
-
-      <WinModal
-        isOpen={gameState.completed}
-        gameStats={gameStats}
-        studentId={studentId}
-        studentName={studentName}
-        onPlayAgain={handlePlayAgain}
-        onBackToMenu={handleBackToStart}
-      />
+    <div className="game-layout" data-testid="game-screen">
+      <LiveSidebar currentStudentId={studentId} />
+      <div className="game-container">
+        <GameHeader
+          gameState={gameState}
+          minMoves={minMoves}
+          onUndo={handleUndo}
+          onRestart={restartGame}
+          onBackToStart={onBackToStart}
+        />
+        <GameBoard
+          towers={gameState.towers}
+          onMove={moveDisk}
+          canMove={(from, to) => canMoveDisk(from, to, gameState.towers)}
+          isGameActive={gameState.isGameActive}
+        />
+        <WinModal
+          isOpen={gameState.completed}
+          gameStats={gameStats}
+          studentId={studentId}
+          studentName={studentName}
+          onPlayAgain={restartGame}
+          onBackToMenu={onBackToStart}
+        />
+      </div>
     </div>
   );
 }

@@ -103,6 +103,23 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
+/* 사이드바 포함 전체 레이아웃 */
+.game-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  height: 100svh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.game-layout .game-container {
+  width: auto;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
 .game-container {
   width: 100vw;
   height: 100vh;
