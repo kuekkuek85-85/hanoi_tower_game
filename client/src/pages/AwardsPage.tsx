@@ -6,7 +6,9 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Trophy } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ArrowLeft, Trophy, Lock } from 'lucide-react';
 import { HanoiRecord } from '@shared/schema';
 
 // ── 학번에서 반 번호 추출 ─────────────────────────────────
@@ -210,7 +212,15 @@ const MEDALS = ['🥇', '🥈', '🥉'];
 // ── Page ──────────────────────────────────────────────────
 export default function AwardsPage() {
   const router = useRouter();
+  const [authed, setAuthed] = useState(false);
+  const [pw, setPw] = useState('');
+  const [pwErr, setPwErr] = useState('');
   const [selectedClass, setSelectedClass] = useState(1);
+
+  const submitPw = () => {
+    if (pw === '123456') { setAuthed(true); setPwErr(''); }
+    else { setPwErr('비밀번호가 올바르지 않습니다.'); }
+  };
 
   const { data: allRecords = [], isLoading } = useQuery<HanoiRecord[]>({
     queryKey: ['/api/records'],
@@ -232,6 +242,38 @@ export default function AwardsPage() {
 
   const top1Id = top10[0]?.studentId ?? '';
   const specialAwards = useMemo(() => computeAwards(summaries, top1Id), [summaries, top1Id]);
+
+  if (!authed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Dialog open>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5" /> 교사 전용 메뉴
+              </DialogTitle>
+              <DialogDescription>비밀번호를 입력하세요.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 mt-2">
+              <Input
+                type="password"
+                placeholder="비밀번호"
+                value={pw}
+                onChange={e => { setPw(e.target.value); setPwErr(''); }}
+                onKeyDown={e => e.key === 'Enter' && submitPw()}
+                autoFocus
+              />
+              {pwErr && <p className="text-sm text-destructive">{pwErr}</p>}
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => router.push('/')}>취소</Button>
+                <Button className="flex-1" onClick={submitPw}>확인</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
