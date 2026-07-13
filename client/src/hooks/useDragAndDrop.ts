@@ -26,6 +26,32 @@ export function useDragAndDrop(
     draggedDisk: null,
   });
 
+  // 드래그 중 엘리먼트 스타일 및 상태를 항상 초기화하는 공통 정리 함수
+  const resetDragState = useCallback(() => {
+    if (dragElementRef.current) {
+      const el = dragElementRef.current;
+      el.style.position = '';
+      el.style.zIndex = '';
+      el.style.pointerEvents = '';
+      el.style.transform = '';
+      el.style.transition = '';
+      el.style.left = '';
+      el.style.top = '';
+      el.style.opacity = '';
+      dragElementRef.current = null;
+    }
+    dragInfoRef.current = { isDragging: false, draggedFrom: null, draggedDisk: null };
+    setDragState({
+      isDragging: false,
+      draggedDisk: null,
+      draggedFrom: null,
+      startX: 0,
+      startY: 0,
+      currentX: 0,
+      currentY: 0,
+    });
+  }, []);
+
   const startDrag = useCallback((
     disk: number,
     from: TowerName,
@@ -33,14 +59,8 @@ export function useDragAndDrop(
     y: number,
     element: HTMLElement
   ) => {
-    
-    // ref와 state 모두 업데이트
-    dragInfoRef.current = {
-      isDragging: true,
-      draggedFrom: from,
-      draggedDisk: disk,
-    };
-    
+    dragInfoRef.current = { isDragging: true, draggedFrom: from, draggedDisk: disk };
+
     setDragState({
       isDragging: true,
       draggedDisk: disk,
@@ -52,8 +72,7 @@ export function useDragAndDrop(
     });
 
     dragElementRef.current = element;
-    
-    // 원판을 드래그 가능하게 만들기
+
     const rect = element.getBoundingClientRect();
     element.style.position = 'fixed';
     element.style.left = `${x - rect.width / 2}px`;
@@ -63,16 +82,13 @@ export function useDragAndDrop(
     element.style.transform = 'scale(1.05) rotate(2deg)';
     element.style.transition = 'none';
     element.style.opacity = '0.9';
-    
   }, []);
 
   const updateDrag = useCallback((x: number, y: number) => {
-    if (!dragInfoRef.current.isDragging || !dragElementRef.current) {
-      return;
-    }
+    if (!dragInfoRef.current.isDragging || !dragElementRef.current) return;
 
     setDragState(prev => ({ ...prev, currentX: x, currentY: y }));
-    
+
     const element = dragElementRef.current;
     const rect = element.getBoundingClientRect();
     element.style.left = `${x - rect.width / 2}px`;
@@ -80,78 +96,42 @@ export function useDragAndDrop(
   }, []);
 
   const endDrag = useCallback((x: number, y: number): boolean => {
-    if (!dragInfoRef.current.isDragging || !dragInfoRef.current.draggedFrom || !dragElementRef.current) {
-      return false;
-    }
+    // 드래그 정보를 먼저 저장 후 즉시 상태 초기화 (항상 실행)
+    const { isDragging, draggedFrom } = dragInfoRef.current;
+    resetDragState();
 
-    const element = dragElementRef.current;
-    const draggedFrom = dragInfoRef.current.draggedFrom;
-    
-    // 메인 기둥 컨테이너만 선택 (tower 클래스와 data-tower 속성을 가진 요소)
+    if (!isDragging || !draggedFrom) return false;
+
     const towers = document.querySelectorAll('.tower[data-tower]');
-    
     let dropTarget: TowerName | null = null;
     let bestDistance = Infinity;
-    
+
     towers.forEach(tower => {
       const rect = tower.getBoundingClientRect();
       const towerName = tower.getAttribute('data-tower') as TowerName;
-      
-      // 기둥 영역 안에 있는지 확인
+
       if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-        // 기둥 중심에서의 거리 계산
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
         const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
-        
-        
-        // 가장 가까운 기둥 선택
+
         if (distance < bestDistance) {
           bestDistance = distance;
           dropTarget = towerName;
         }
       }
     });
-    
 
-    // 이동 가능성 체크 및 이동 시도
-    let success = false;
     if (dropTarget && dropTarget !== draggedFrom) {
-      success = onMove(draggedFrom, dropTarget);
-    } else if (dropTarget === draggedFrom) {
-    } else {
+      return onMove(draggedFrom, dropTarget);
     }
+    return false;
+  }, [onMove, resetDragState]);
 
-    // 원래 위치로 복구
-    element.style.position = '';
-    element.style.zIndex = '';
-    element.style.pointerEvents = '';
-    element.style.transform = '';
-    element.style.transition = '';
-    element.style.left = '';
-    element.style.top = '';
-    element.style.opacity = '';
-
-    // 상태 초기화
-    dragInfoRef.current = {
-      isDragging: false,
-      draggedFrom: null,
-      draggedDisk: null,
-    };
-    
-    setDragState({
-      isDragging: false,
-      draggedDisk: null,
-      draggedFrom: null,
-      startX: 0,
-      startY: 0,
-      currentX: 0,
-      currentY: 0,
-    });
-
-    dragElementRef.current = null;
-    return success;
-  }, [onMove]);
+  // 터치 취소 등 비정상 종료 시 사용 (이동 시도 없이 상태만 초기화)
+  const cancelDrag = useCallback(() => {
+    resetDragState();
+  }, [resetDragState]);
 
   const getHighlightedTower = useCallback((x: number, y: number): TowerName | null => {
     if (!dragInfoRef.current.isDragging || !dragInfoRef.current.draggedFrom) return null;
@@ -159,18 +139,18 @@ export function useDragAndDrop(
     const towers = document.querySelectorAll('.tower[data-tower]');
     let closestTower: TowerName | null = null;
     let bestDistance = Infinity;
-    
+
     for (let i = 0; i < towers.length; i++) {
       const tower = towers[i];
       const rect = tower.getBoundingClientRect();
-      
+
       if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
         const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
-        
+
         const towerName = tower.getAttribute('data-tower') as TowerName;
-        if (canMove(dragInfoRef.current.draggedFrom, towerName) && distance < bestDistance) {
+        if (canMove(dragInfoRef.current.draggedFrom!, towerName) && distance < bestDistance) {
           bestDistance = distance;
           closestTower = towerName;
         }
@@ -185,6 +165,7 @@ export function useDragAndDrop(
     startDrag,
     updateDrag,
     endDrag,
+    cancelDrag,
     getHighlightedTower,
   };
 }

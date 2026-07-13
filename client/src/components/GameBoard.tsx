@@ -18,7 +18,7 @@ export function GameBoard({ towers, onMove, canMove, isGameActive }: GameBoardPr
 
   const handleMove = useCallback((from: TowerName, to: TowerName): boolean => {
     const success = onMove(from, to);
-    
+
     if (success) {
       playMoveSound();
     } else {
@@ -26,7 +26,7 @@ export function GameBoard({ towers, onMove, canMove, isGameActive }: GameBoardPr
       setInvalidTower(to);
       setTimeout(() => setInvalidTower(null), 500);
     }
-    
+
     return success;
   }, [onMove, playMoveSound, playErrorSound]);
 
@@ -35,6 +35,7 @@ export function GameBoard({ towers, onMove, canMove, isGameActive }: GameBoardPr
     startDrag,
     updateDrag,
     endDrag,
+    cancelDrag,
     getHighlightedTower,
   } = useDragAndDrop(handleMove, canMove);
 
@@ -47,48 +48,74 @@ export function GameBoard({ towers, onMove, canMove, isGameActive }: GameBoardPr
   ) => {
     startDrag(disk, tower, x, y, element);
     setHighlightedTower(null);
-    
+
     const handleMouseMove = (e: MouseEvent) => {
       updateDrag(e.clientX, e.clientY);
       setHighlightedTower(getHighlightedTower(e.clientX, e.clientY));
     };
-    
+
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches.length > 0) {
-        e.preventDefault(); // 페이지 스크롤 방지
+        e.preventDefault();
         const touch = e.touches[0];
         updateDrag(touch.clientX, touch.clientY);
         setHighlightedTower(getHighlightedTower(touch.clientX, touch.clientY));
       }
     };
-    
-    const handleEnd = (e: MouseEvent | TouchEvent) => {
-      let x, y;
-      if (e instanceof MouseEvent) {
-        x = e.clientX;
-        y = e.clientY;
-      } else if (e.changedTouches && e.changedTouches.length > 0) {
-        const touch = e.changedTouches[0];
-        x = touch.clientX;
-        y = touch.clientY;
-      } else {
-        return;
-      }
-      
-      endDrag(x, y);
-      setHighlightedTower(null);
-      
+
+    // 이벤트 리스너 일괄 정리 함수
+    const cleanup = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleEnd);
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleEnd);
+      document.removeEventListener('touchcancel', handleCancel); // 터치 취소 처리
+      document.removeEventListener('visibilitychange', handleVisibility);
+      setHighlightedTower(null);
     };
-    
+
+    const handleEnd = (e: MouseEvent | TouchEvent) => {
+      let endX: number;
+      let endY: number;
+
+      if (e instanceof MouseEvent) {
+        endX = e.clientX;
+        endY = e.clientY;
+      } else if (e.changedTouches && e.changedTouches.length > 0) {
+        endX = e.changedTouches[0].clientX;
+        endY = e.changedTouches[0].clientY;
+      } else {
+        // changedTouches가 비어 있어도 항상 정리 (버그 수정)
+        cancelDrag();
+        cleanup();
+        return;
+      }
+
+      endDrag(endX, endY);
+      cleanup();
+    };
+
+    // 터치 취소(알림창, 멀티터치 등) → 이동 없이 상태만 초기화
+    const handleCancel = () => {
+      cancelDrag();
+      cleanup();
+    };
+
+    // 탭이 백그라운드로 전환될 때 드래그 강제 취소
+    const handleVisibility = () => {
+      if (document.hidden) {
+        cancelDrag();
+        cleanup();
+      }
+    };
+
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleEnd);
     document.addEventListener('touchmove', handleTouchMove, { passive: false });
     document.addEventListener('touchend', handleEnd);
-  }, [startDrag, updateDrag, endDrag, getHighlightedTower]);
+    document.addEventListener('touchcancel', handleCancel);       // 신규
+    document.addEventListener('visibilitychange', handleVisibility); // 신규
+  }, [startDrag, updateDrag, endDrag, cancelDrag, getHighlightedTower]);
 
   return (
     <div className="game-board" role="application" aria-label="하노이타워 게임">
@@ -104,8 +131,7 @@ export function GameBoard({ towers, onMove, canMove, isGameActive }: GameBoardPr
           />
         ))}
       </div>
-      
-      {/* 드래그 중인 원판 표시 */}
+
       {dragState.isDragging && (
         <div
           className="dragging-disk"
