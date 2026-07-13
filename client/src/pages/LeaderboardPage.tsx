@@ -33,9 +33,11 @@ export default function LeaderboardPage() {
 
   const { data: allRecords = [], isLoading, isError, refetch } = useQuery<HanoiRecord[]>({
     queryKey: ['/api/records'],
-    refetchInterval: 5000,
+    refetchInterval: 30000,       // 30초마다 갱신 (5초는 Firestore 할당량 초과 유발)
+    refetchOnWindowFocus: false,  // 탭 전환 시 불필요한 재조회 방지
+    staleTime: 25000,
     retry: 1,
-    placeholderData: (prev) => prev, // 에러 시 이전 데이터 유지
+    placeholderData: (prev) => prev,
   });
 
   const optimalRecords = useMemo(() => {
