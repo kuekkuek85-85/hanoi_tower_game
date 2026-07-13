@@ -32,8 +32,10 @@ export async function GET(request: NextRequest) {
     const records = snapshot.docs.map(doc => docToRecord(doc.id, doc.data()));
 
     return NextResponse.json(records);
-  } catch {
-    return NextResponse.json({ error: 'Failed to fetch records' }, { status: 500 });
+  } catch (err) {
+    console.error('[GET /api/records]', err);
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: 'Failed to fetch records', detail: message }, { status: 500 });
   }
 }
 

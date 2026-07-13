@@ -31,9 +31,11 @@ export default function LeaderboardPage() {
 
   const recordsPerPage = 10;
 
-  const { data: allRecords = [], isLoading, error, refetch } = useQuery<HanoiRecord[]>({
+  const { data: allRecords = [], isLoading, isError, refetch } = useQuery<HanoiRecord[]>({
     queryKey: ['/api/records'],
     refetchInterval: 5000,
+    retry: 1,
+    placeholderData: (prev) => prev, // 에러 시 이전 데이터 유지
   });
 
   const optimalRecords = useMemo(() => {
@@ -126,7 +128,8 @@ export default function LeaderboardPage() {
     );
   }
 
-  if (error) {
+  // 데이터가 전혀 없는 초기 로딩 실패만 전체 화면 에러로 처리
+  if (isError && allRecords.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md">
