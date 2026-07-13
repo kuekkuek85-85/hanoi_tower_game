@@ -21,9 +21,15 @@ function minMoves(disks: number) {
 
 function rankSessions(sessions: GameSession[]): GameSession[] {
   return [...sessions].sort((a, b) => {
-    // 원판 수 많을수록 → 이동수 적을수록 → 시작 빠를수록 상위
+    // 1순위: 완료(done) 먼저
+    const aD = a.status === 'done' ? 0 : 1;
+    const bD = b.status === 'done' ? 0 : 1;
+    if (aD !== bD) return aD - bD;
+    // 2순위: 원판 수 많을수록
     if (a.disks !== b.disks) return b.disks - a.disks;
+    // 3순위: 이동 수 적을수록
     if (a.moves !== b.moves) return a.moves - b.moves;
+    // 4순위: 시작 빠를수록
     return a.startedAt - b.startedAt;
   });
 }
@@ -128,7 +134,7 @@ export function LiveSidebar({ currentStudentId }: LiveSidebarProps) {
 
       {/* 하단 설명 */}
       <div className="px-3 py-2 border-t border-white/10 text-[9px] text-white/35 text-center leading-tight">
-        3초마다 갱신 · 원판↑ 이동↓ 우선
+        3초마다 갱신 · 완료↑ 원판↑ 이동↓ 우선
       </div>
     </aside>
   );
