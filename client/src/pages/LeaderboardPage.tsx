@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Search, Trophy, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowLeft, Search, Trophy, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
 import { HanoiRecord } from '@shared/schema';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -31,11 +31,9 @@ export default function LeaderboardPage() {
 
   const recordsPerPage = 10;
 
-  const { data: allRecords = [], isLoading, isError, refetch } = useQuery<HanoiRecord[]>({
+  const { data: allRecords = [], isLoading, isFetching, isError, refetch } = useQuery<HanoiRecord[]>({
     queryKey: ['/api/records'],
-    refetchInterval: 30000,       // 30초마다 갱신 (5초는 Firestore 할당량 초과 유발)
-    refetchOnWindowFocus: false,  // 탭 전환 시 불필요한 재조회 방지
-    staleTime: 25000,
+    refetchOnWindowFocus: false,
     retry: 1,
     placeholderData: (prev) => prev,
   });
@@ -172,6 +170,15 @@ export default function LeaderboardPage() {
               </p>
             </div>
           </div>
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            data-testid="button-refresh"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+            {isFetching ? '불러오는 중...' : '새로고침'}
+          </Button>
         </div>
 
         {/* Filters and Search */}
