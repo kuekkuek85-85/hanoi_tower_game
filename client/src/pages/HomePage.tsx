@@ -5,7 +5,11 @@ import { StartScreen } from '@/components/StartScreen';
 import { GameScreen } from '@/components/GameScreen';
 import { WelcomeModal } from '@/components/WelcomeModal';
 
-export default function HomePage() {
+interface HomePageProps {
+  mode?: 'student' | 'teacher';
+}
+
+export default function HomePage({ mode = 'student' }: HomePageProps) {
   const [gameStarted, setGameStarted] = useState(false);
   const [gameConfig, setGameConfig] = useState<{
     studentId: string;
@@ -36,8 +40,8 @@ export default function HomePage() {
 
   return (
     <>
-      <WelcomeModal />
-      <StartScreen onStartGame={handleStartGame} />
+      {mode === 'student' && <WelcomeModal />}
+      <StartScreen onStartGame={handleStartGame} mode={mode} />
     </>
   );
 }

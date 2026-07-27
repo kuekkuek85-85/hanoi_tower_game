@@ -11,11 +11,11 @@ import { Info, Trophy, GraduationCap, Award } from 'lucide-react';
 
 interface StartScreenProps {
   onStartGame: (studentId: string, studentName: string, disks: number) => void;
+  mode?: 'student' | 'teacher';
 }
 
-const IS_TEACHER_MODE = process.env.NEXT_PUBLIC_APP_MODE === 'teacher';
-
-export function StartScreen({ onStartGame }: StartScreenProps) {
+export function StartScreen({ onStartGame, mode = 'student' }: StartScreenProps) {
+  const IS_TEACHER_MODE = mode === 'teacher';
   const router = useRouter();
   const [studentInfo, setStudentInfo] = useState('');
   const [school, setSchool] = useState('');
@@ -180,7 +180,7 @@ export function StartScreen({ onStartGame }: StartScreenProps) {
           <Button
             variant="outline"
             className="w-full mb-4"
-            onClick={() => router.push('/leaderboard')}
+            onClick={() => router.push(IS_TEACHER_MODE ? '/training/leaderboard' : '/leaderboard')}
             data-testid="button-leaderboard"
           >
             <Trophy className="h-4 w-4 mr-2" />
@@ -191,7 +191,7 @@ export function StartScreen({ onStartGame }: StartScreenProps) {
           <Button
             variant="ghost"
             className="w-full mb-2 text-muted-foreground text-sm"
-            onClick={() => router.push('/awards')}
+            onClick={() => router.push(IS_TEACHER_MODE ? '/training/awards' : '/awards')}
             data-testid="button-awards"
           >
             <Award className="h-4 w-4 mr-2" />
@@ -202,7 +202,7 @@ export function StartScreen({ onStartGame }: StartScreenProps) {
           <Button
             variant="ghost"
             className="w-full mb-4 text-muted-foreground text-sm"
-            onClick={() => router.push('/simulation')}
+            onClick={() => router.push(IS_TEACHER_MODE ? '/training/simulation' : '/simulation')}
             data-testid="button-simulation"
           >
             <GraduationCap className="h-4 w-4 mr-2" />
