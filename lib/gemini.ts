@@ -12,24 +12,18 @@ export async function generateHanoiFeedback(
 
   const minMoves = Math.pow(2, disks) - 1;
 
-  const prompt = `당신은 컴퓨터 교육 전문가입니다. 교사가 하노이 타워 문제의 알고리즘을 자연어로 설명한 내용에 한국어로 피드백을 제공해주세요.
+  const prompt = `당신은 컴퓨터 교육 전문가입니다. 교사가 작성한 하노이 타워 알고리즘 설명에 간결한 한국어 피드백을 작성하세요.
 
-[게임 정보]
-원판 수: ${disks}개 | 이동 횟수: ${moves}회 | 최소 이동: ${minMoves}회
+[게임 정보] 원판 ${disks}개 | 이동 ${moves}회 | 최소 ${minMoves}회
 
-[교사가 작성한 알고리즘 설명]
+[교사 풀이]
 ${content}
 
-다음 세 가지 항목으로 피드백을 작성해주세요:
+아래 형식으로 작성하되, 각 항목은 1~2문장으로 핵심만 쓰세요. 전체 10줄을 넘지 마세요.
 
 ✅ 잘 이해한 부분
-(교사가 정확하게 이해하거나 잘 표현한 내용)
-
 💡 보완할 점
-(더 명확하게 표현하거나 보완이 필요한 부분)
-
-📚 핵심 알고리즘 정리
-(하노이 타워 재귀 알고리즘의 핵심 — n개 원판을 C로 옮기려면: ① n-1개를 B로, ② 가장 큰 것을 C로, ③ n-1개를 B에서 C로)`;
+📚 핵심 정리 (n개 이동 = ①n-1개→B ②최대→C ③n-1개→C)`;
 
   const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
 
