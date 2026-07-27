@@ -10,6 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trophy, GraduationCap, History, UserRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { WelcomeModal } from '@/components/WelcomeModal';
 
 interface Participant {
   school: string;
@@ -72,6 +73,7 @@ export default function TrainingPage() {
 
   return (
     <div className="start-screen">
+      <WelcomeModal />
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <div className="w-full max-w-md">
           {/* 헤더 */}
