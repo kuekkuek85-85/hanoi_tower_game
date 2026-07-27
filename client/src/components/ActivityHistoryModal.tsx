@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Sparkles, MessageCircle, ClipboardList } from 'lucide-react';
+import { FeedbackText } from './FeedbackText';
 
 interface Reflection {
   id: string;
@@ -89,18 +90,14 @@ export function ActivityHistoryModal({ isOpen, participantId, onClose }: Activit
                         <p className="text-xs font-semibold text-orange-600 mb-1 flex items-center gap-1">
                           <MessageCircle className="h-3 w-3" /> 교사 피드백
                         </p>
-                        <p className="text-sm whitespace-pre-wrap bg-orange-50 dark:bg-orange-950/20 border border-orange-200/50 rounded p-2">
-                          {r.teacherFeedback}
-                        </p>
+                        <FeedbackText text={r.teacherFeedback} className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200/50 rounded p-2" />
                       </div>
                     ) : r.aiFeedback ? (
                       <div>
                         <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
                           <Sparkles className="h-3 w-3" /> AI 1차 피드백 (교사 검토 전)
                         </p>
-                        <p className="text-sm whitespace-pre-wrap bg-primary/5 border border-primary/20 rounded p-2">
-                          {r.aiFeedback}
-                        </p>
+                        <FeedbackText text={r.aiFeedback} className="bg-primary/5 border border-primary/20 rounded p-2" />
                       </div>
                     ) : null}
                   </CardContent>

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sparkles, MessageCircle, RefreshCw, Send, Lock } from 'lucide-react';
+import { FeedbackText } from '@/components/FeedbackText';
 import { useToast } from '@/hooks/use-toast';
 
 interface Reflection {
@@ -182,9 +183,7 @@ export default function TeacherDashboardPage() {
                         <p className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
                           <Sparkles className="h-3 w-3" /> AI 1차 피드백
                         </p>
-                        <p className="text-sm whitespace-pre-wrap bg-primary/5 border border-primary/20 rounded p-3">
-                          {r.aiFeedback}
-                        </p>
+                        <FeedbackText text={r.aiFeedback} className="bg-primary/5 border border-primary/20 rounded p-3" />
                       </div>
                     )}
 

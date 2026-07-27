@@ -19,11 +19,11 @@ export async function generateHanoiFeedback(
 [교사 풀이]
 ${content}
 
-아래 형식으로 작성하되, 각 항목은 1~2문장으로 핵심만 쓰세요. 전체 10줄을 넘지 마세요.
+아래 형식으로만 응답하세요. 각 항목은 한 문장씩, 전체 6줄을 절대 넘지 마세요. 마크다운 기호(**, ##, --- 등)는 사용하지 마세요.
 
-✅ 잘 이해한 부분
-💡 보완할 점
-📚 핵심 정리 (n개 이동 = ①n-1개→B ②최대→C ③n-1개→C)`;
+✅ 잘 이해한 부분: (한 문장)
+💡 보완할 점: (한 문장)
+📚 핵심: n개 원판 이동 = ①n-1개를 B로 ②가장 큰 것을 C로 ③n-1개를 B에서 C로`;
 
   const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
 

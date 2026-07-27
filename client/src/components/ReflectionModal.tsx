@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Brain, Sparkles, MessageCircle } from 'lucide-react';
+import { FeedbackText } from './FeedbackText';
 
 interface ReflectionModalProps {
   isOpen: boolean;
@@ -142,7 +143,7 @@ export function ReflectionModal({
                   <p className="text-xs font-semibold text-primary mb-2 flex items-center gap-1">
                     <Sparkles className="h-3 w-3" /> AI 1차 피드백
                   </p>
-                  <p className="text-sm whitespace-pre-wrap">{result.aiFeedback}</p>
+                  <FeedbackText text={result.aiFeedback} />
                 </CardContent>
               </Card>
             )}
