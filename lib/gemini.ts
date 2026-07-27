@@ -31,7 +31,7 @@ ${content}
 📚 핵심 알고리즘 정리
 (하노이 타워 재귀 알고리즘의 핵심 — n개 원판을 C로 옮기려면: ① n-1개를 B로, ② 가장 큰 것을 C로, ③ n-1개를 B에서 C로)`;
 
-  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
 
   const res = await fetch(url, {
     method: 'POST',
