@@ -30,10 +30,14 @@ export async function GET(request: NextRequest) {
     const col = db.collection(REFLECTIONS_COLLECTION);
 
     const snapshot = participantId
-      ? await col.where('participantId', '==', participantId).orderBy('createdAt', 'desc').limit(50).get()
+      ? await col.where('participantId', '==', participantId).limit(50).get()
       : await col.orderBy('createdAt', 'desc').limit(200).get();
 
-    return NextResponse.json(snapshot.docs.map(doc => docToReflection(doc.id, doc.data())));
+    const docs = snapshot.docs.map(doc => docToReflection(doc.id, doc.data()));
+    if (participantId) {
+      docs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+    return NextResponse.json(docs);
   } catch (err) {
     console.error('[GET /api/reflections]', err);
     return NextResponse.json({ error: 'Failed to fetch reflections' }, { status: 500 });
