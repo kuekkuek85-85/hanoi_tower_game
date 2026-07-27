@@ -15,7 +15,18 @@ export async function GET() {
       .where('updatedAt', '>', cutoff)
       .get();
 
-    const sessions = snapshot.docs.map(doc => {
+    // studentId 기준 최신 세션만 유지 (중복 제거 안전망)
+    const latestByStudent = new Map<string, { doc: FirebaseFirestore.QueryDocumentSnapshot; updatedAt: number }>();
+    for (const doc of snapshot.docs) {
+      const d = doc.data();
+      const updatedAt = d.updatedAt instanceof Timestamp ? d.updatedAt.toMillis() : Number(d.updatedAt);
+      const existing = latestByStudent.get(d.studentId);
+      if (!existing || updatedAt > existing.updatedAt) {
+        latestByStudent.set(d.studentId, { doc, updatedAt });
+      }
+    }
+
+    const sessions = Array.from(latestByStudent.values()).map(({ doc }) => {
       const d = doc.data();
       return {
         id: doc.id,
@@ -44,17 +55,40 @@ export async function POST(request: NextRequest) {
 
     const db = getDb();
     const now = Timestamp.now();
-    const docRef = await db.collection(SESSIONS_COLLECTION).add({
-      studentId,
-      studentName,
-      disks,
-      moves: 0,
-      status: 'playing',
-      startedAt: now,
-      updatedAt: now,
-    });
 
-    return NextResponse.json({ id: docRef.id });
+    // studentId로 기존 세션 검색 → 있으면 upsert, 없으면 신규 생성
+    const existing = await db
+      .collection(SESSIONS_COLLECTION)
+      .where('studentId', '==', studentId)
+      .limit(1)
+      .get();
+
+    let sessionId: string;
+
+    if (!existing.empty) {
+      sessionId = existing.docs[0].id;
+      await db.collection(SESSIONS_COLLECTION).doc(sessionId).update({
+        studentName,
+        disks,
+        moves: 0,
+        status: 'playing',
+        startedAt: now,
+        updatedAt: now,
+      });
+    } else {
+      const docRef = await db.collection(SESSIONS_COLLECTION).add({
+        studentId,
+        studentName,
+        disks,
+        moves: 0,
+        status: 'playing',
+        startedAt: now,
+        updatedAt: now,
+      });
+      sessionId = docRef.id;
+    }
+
+    return NextResponse.json({ id: sessionId });
   } catch {
     return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
   }
