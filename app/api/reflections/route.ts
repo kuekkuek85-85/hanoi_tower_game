@@ -31,12 +31,10 @@ export async function GET(request: NextRequest) {
 
     const snapshot = participantId
       ? await col.where('participantId', '==', participantId).limit(50).get()
-      : await col.orderBy('createdAt', 'desc').limit(200).get();
+      : await col.limit(200).get();
 
     const docs = snapshot.docs.map(doc => docToReflection(doc.id, doc.data()));
-    if (participantId) {
-      docs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }
+    docs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return NextResponse.json(docs);
   } catch (err) {
     console.error('[GET /api/reflections]', err);
