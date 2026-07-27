@@ -94,6 +94,46 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// 중복 세션 일괄 삭제 (일회성 정리용, 교사 비밀번호 필요)
+export async function DELETE(request: NextRequest) {
+  try {
+    const { password } = await request.json();
+    if (password !== '123456') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const db = getDb();
+    const snapshot = await db.collection(SESSIONS_COLLECTION).get();
+
+    // studentId 기준 최신 문서 1개 제외하고 나머지 수집
+    const latestByStudent = new Map<string, { id: string; updatedAt: number }>();
+    for (const doc of snapshot.docs) {
+      const d = doc.data();
+      const updatedAt = d.updatedAt instanceof Timestamp ? d.updatedAt.toMillis() : Number(d.updatedAt);
+      const existing = latestByStudent.get(d.studentId);
+      if (!existing || updatedAt > existing.updatedAt) {
+        latestByStudent.set(d.studentId, { id: doc.id, updatedAt });
+      }
+    }
+
+    const keepIds = new Set(Array.from(latestByStudent.values()).map(v => v.id));
+    const toDelete = snapshot.docs.filter(doc => !keepIds.has(doc.id));
+
+    // Firestore 배치 삭제 (최대 500개씩)
+    let deleted = 0;
+    for (let i = 0; i < toDelete.length; i += 500) {
+      const batch = db.batch();
+      toDelete.slice(i, i + 500).forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+      deleted += Math.min(500, toDelete.length - i);
+    }
+
+    return NextResponse.json({ deleted, kept: keepIds.size });
+  } catch {
+    return NextResponse.json({ error: 'Failed to cleanup sessions' }, { status: 500 });
+  }
+}
+
 export async function PATCH(request: NextRequest) {
   try {
     const { id, moves, status } = await request.json();
