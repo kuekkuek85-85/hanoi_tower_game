@@ -13,9 +13,13 @@ interface StartScreenProps {
   onStartGame: (studentId: string, studentName: string, disks: number) => void;
 }
 
+const IS_TEACHER_MODE = process.env.NEXT_PUBLIC_APP_MODE === 'teacher';
+
 export function StartScreen({ onStartGame }: StartScreenProps) {
   const router = useRouter();
   const [studentInfo, setStudentInfo] = useState('');
+  const [school, setSchool] = useState('');
+  const [teacherName, setTeacherName] = useState('');
   const [diskCount, setDiskCount] = useState([3]);
   const [error, setError] = useState('');
 
@@ -29,17 +33,26 @@ export function StartScreen({ onStartGame }: StartScreenProps) {
   };
 
   const handleSubmit = () => {
-    const input = studentInfo.trim();
+    if (IS_TEACHER_MODE) {
+      const s = school.trim();
+      const t = teacherName.trim();
+      if (!s || !t) {
+        setError('소속학교와 성함을 모두 입력해주세요.');
+        return;
+      }
+      setError('');
+      onStartGame(s, t, diskCount[0]);
+      return;
+    }
 
+    const input = studentInfo.trim();
     if (!validateInput(input)) {
       setError('올바른 형식으로 입력해주세요 (예: 10101 홍길동)');
       return;
     }
-
     const parts = input.split(' ');
     const studentId = parts[0];
     const studentName = parts.slice(1).join(' ');
-
     setError('');
     onStartGame(studentId, studentName, diskCount[0]);
   };
@@ -65,7 +78,7 @@ export function StartScreen({ onStartGame }: StartScreenProps) {
               하노이타워
             </h1>
             <p className="text-muted-foreground" data-testid="subtitle">
-              교육용 퍼즐 게임
+              {IS_TEACHER_MODE ? '교원 연수용' : '교육용 퍼즐 게임'}
             </p>
           </div>
 
@@ -73,29 +86,61 @@ export function StartScreen({ onStartGame }: StartScreenProps) {
           <Card className="mb-6">
             <CardContent className="p-6">
               <div className="space-y-6">
-                {/* 학생 정보 입력 */}
-                <div className="space-y-2">
-                  <Label htmlFor="student-info">학번과 이름</Label>
-                  <Input
-                    id="student-info"
-                    type="text"
-                    placeholder="10101 홍길동"
-                    value={studentInfo}
-                    onChange={(e) => handleInputChange(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    data-testid="input-student-info"
-                    className={error ? 'border-red-500' : ''}
-                  />
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <Info className="h-3 w-3 mr-1" />
-                    5자리 학번 + 공백 + 이름 (한글 또는 영문)
-                  </div>
-                  {error && (
-                    <div className="text-sm text-red-500" data-testid="error-message">
-                      {error}
+                {/* 정보 입력 */}
+                {IS_TEACHER_MODE ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="school">소속학교</Label>
+                      <Input
+                        id="school"
+                        type="text"
+                        placeholder="OO초등학교"
+                        value={school}
+                        onChange={(e) => { setSchool(e.target.value); if (error) setError(''); }}
+                        onKeyDown={handleKeyDown}
+                        className={error ? 'border-red-500' : ''}
+                      />
                     </div>
-                  )}
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="teacher-name">성함</Label>
+                      <Input
+                        id="teacher-name"
+                        type="text"
+                        placeholder="홍길동"
+                        value={teacherName}
+                        onChange={(e) => { setTeacherName(e.target.value); if (error) setError(''); }}
+                        onKeyDown={handleKeyDown}
+                        className={error ? 'border-red-500' : ''}
+                      />
+                    </div>
+                    {error && (
+                      <div className="text-sm text-red-500">{error}</div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="student-info">학번과 이름</Label>
+                    <Input
+                      id="student-info"
+                      type="text"
+                      placeholder="10101 홍길동"
+                      value={studentInfo}
+                      onChange={(e) => handleInputChange(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      data-testid="input-student-info"
+                      className={error ? 'border-red-500' : ''}
+                    />
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <Info className="h-3 w-3 mr-1" />
+                      5자리 학번 + 공백 + 이름 (한글 또는 영문)
+                    </div>
+                    {error && (
+                      <div className="text-sm text-red-500" data-testid="error-message">
+                        {error}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* 원판 개수 선택 */}
                 <div className="space-y-3">
@@ -142,7 +187,7 @@ export function StartScreen({ onStartGame }: StartScreenProps) {
             명예의 전당
           </Button>
 
-          {/* 학급 시상식 버튼 */}
+          {/* 학급 시상식 / 연수 시상식 버튼 */}
           <Button
             variant="ghost"
             className="w-full mb-2 text-muted-foreground text-sm"
@@ -150,7 +195,7 @@ export function StartScreen({ onStartGame }: StartScreenProps) {
             data-testid="button-awards"
           >
             <Award className="h-4 w-4 mr-2" />
-            학급 시상식
+            {IS_TEACHER_MODE ? '연수 시상식' : '학급 시상식'}
           </Button>
 
           {/* 교사용 재귀 시뮬레이션 버튼 */}
