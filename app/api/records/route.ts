@@ -33,11 +33,15 @@ export async function GET(request: NextRequest) {
       .get();
     let records = snapshot.docs.map(doc => docToRecord(doc.id, doc.data()));
 
+    // 학생 studentId = 5자리 숫자, 교사 studentId = 학교명(비숫자)
+    const isStudentId = (id: string) => /^\d{5}$/.test(id);
+
     if (modeFilter === 'teacher') {
-      records = records.filter(r => r.mode === 'teacher');
+      // mode='teacher' 이거나 mode 미설정인데 학교명 형태인 경우(기존 데이터)
+      records = records.filter(r => r.mode === 'teacher' || !isStudentId(r.studentId));
     } else {
-      // student 또는 미지정: 교사 기록 제외
-      records = records.filter(r => r.mode !== 'teacher');
+      // 학생: mode!='teacher' 이고 5자리 숫자 ID
+      records = records.filter(r => r.mode !== 'teacher' && isStudentId(r.studentId));
     }
 
     return NextResponse.json(records);
