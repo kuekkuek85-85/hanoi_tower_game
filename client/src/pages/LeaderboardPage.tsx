@@ -22,7 +22,11 @@ interface SortState {
   direction: SortDirection;
 }
 
-export default function LeaderboardPage() {
+interface LeaderboardPageProps {
+  mode?: 'student' | 'teacher';
+}
+
+export default function LeaderboardPage({ mode = 'student' }: LeaderboardPageProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [diskFilter, setDiskFilter] = useState<string>('all');
@@ -30,9 +34,15 @@ export default function LeaderboardPage() {
   const [sortState, setSortState] = useState<SortState>({ field: 'moves', direction: 'asc' });
 
   const recordsPerPage = 10;
+  const apiUrl = `/api/records?mode=${mode}`;
 
   const { data: allRecords = [], isLoading, isFetching, isError, refetch } = useQuery<HanoiRecord[]>({
-    queryKey: ['/api/records'],
+    queryKey: ['/api/records', mode],
+    queryFn: async () => {
+      const res = await fetch(apiUrl);
+      if (!res.ok) throw new Error('Failed');
+      return res.json();
+    },
     refetchOnWindowFocus: false,
     retry: 1,
     placeholderData: (prev) => prev,
@@ -155,7 +165,7 @@ export default function LeaderboardPage() {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => router.push('/')}
+              onClick={() => router.push(mode === 'teacher' ? '/training' : '/')}
               data-testid="button-back-home"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -166,7 +176,7 @@ export default function LeaderboardPage() {
                 명예의 전당
               </h1>
               <p className="text-muted-foreground" data-testid="text-page-subtitle">
-                하노이타워 게임 기록
+                {mode === 'teacher' ? '교원 연수 기록' : '하노이타워 게임 기록'}
               </p>
             </div>
           </div>
@@ -191,7 +201,7 @@ export default function LeaderboardPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="학번 또는 이름으로 검색"
+                  placeholder={mode === 'teacher' ? '소속학교 또는 이름으로 검색' : '학번 또는 이름으로 검색'}
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -249,7 +259,7 @@ export default function LeaderboardPage() {
                         className="h-auto p-0 font-semibold"
                         data-testid="button-sort-name"
                       >
-                        학생 정보 {getSortIcon('studentName')}
+                        {mode === 'teacher' ? '교사 정보' : '학생 정보'} {getSortIcon('studentName')}
                       </Button>
                     </TableHead>
                     <TableHead>

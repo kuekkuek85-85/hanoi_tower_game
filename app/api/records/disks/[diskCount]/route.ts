@@ -13,6 +13,7 @@ function docToRecord(id: string, data: FirebaseFirestore.DocumentData): HanoiRec
     disks: data.disks,
     moves: data.moves,
     seconds: data.seconds,
+    mode: (data.mode as 'student' | 'teacher') ?? 'student',
     createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
   };
 }

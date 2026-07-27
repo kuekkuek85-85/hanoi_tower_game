@@ -104,6 +104,7 @@ export function GameScreen({ studentId, studentName, disks, onBackToStart, mode 
           gameStats={gameStats}
           studentId={studentId}
           studentName={studentName}
+          mode={mode}
           onPlayAgain={restartGame}
           onBackToMenu={onBackToStart}
           onWriteReflection={mode === 'teacher' ? () => setShowReflection(true) : undefined}
