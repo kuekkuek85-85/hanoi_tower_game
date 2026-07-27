@@ -31,21 +31,25 @@ ${content}
 📚 핵심 알고리즘 정리
 (하노이 타워 재귀 알고리즘의 핵심 — n개 원판을 C로 옮기려면: ① n-1개를 B로, ② 가장 큰 것을 C로, ③ n-1개를 B에서 C로)`;
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-      }),
-    },
-  );
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+    }),
+  });
 
   if (!res.ok) {
-    throw new Error(`Gemini API error: ${res.status}`);
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Gemini API ${res.status}: ${errText}`);
   }
 
   const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '피드백 생성에 실패했습니다.';
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    throw new Error(`Gemini 응답 파싱 실패: ${JSON.stringify(data)}`);
+  }
+  return text;
 }

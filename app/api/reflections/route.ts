@@ -51,8 +51,9 @@ export async function POST(request: NextRequest) {
     try {
       aiFeedback = await generateHanoiFeedback(content.trim(), disks, moves);
     } catch (e) {
-      console.error('[Gemini]', e);
-      aiFeedback = '⚠️ AI 피드백 생성에 실패했습니다. 교사가 직접 피드백을 작성해주세요.';
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('[Gemini error]', msg);
+      aiFeedback = `⚠️ AI 피드백 생성에 실패했습니다. (${msg}) 교사가 직접 피드백을 작성해주세요.`;
     }
 
     const db = getDb();
