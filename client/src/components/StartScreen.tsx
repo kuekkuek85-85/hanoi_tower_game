@@ -1,58 +1,82 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Info, Trophy, GraduationCap, Award } from 'lucide-react';
+import { Info, Trophy, GraduationCap, Award, History, UserRound } from 'lucide-react';
+import { ActivityHistoryModal } from '@/components/ActivityHistoryModal';
 
 interface StartScreenProps {
   onStartGame: (studentId: string, studentName: string, disks: number) => void;
 }
+
+const STORAGE_ID_KEY = 'hanoiStudentId';
+const STORAGE_NAME_KEY = 'hanoiStudentName';
 
 export function StartScreen({ onStartGame }: StartScreenProps) {
   const router = useRouter();
   const [studentInfo, setStudentInfo] = useState('');
   const [diskCount, setDiskCount] = useState([3]);
   const [error, setError] = useState('');
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [savedName, setSavedName] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    const id = localStorage.getItem(STORAGE_ID_KEY);
+    const name = localStorage.getItem(STORAGE_NAME_KEY);
+    if (id && name) {
+      setSavedId(id);
+      setSavedName(name);
+    }
+  }, []);
+
+  const isSavedLogin = !!(savedId && savedName);
 
   const validateInput = (input: string): boolean => {
     const regex = /^\d{5}\s[가-힣A-Za-z]+$/;
     return regex.test(input.trim());
   };
 
-  const calculateMinMoves = (n: number): number => {
-    return Math.pow(2, n) - 1;
-  };
+  const calculateMinMoves = (n: number): number => Math.pow(2, n) - 1;
 
   const handleSubmit = () => {
-    const input = studentInfo.trim();
+    if (isSavedLogin) {
+      onStartGame(savedId!, savedName!, diskCount[0]);
+      return;
+    }
 
+    const input = studentInfo.trim();
     if (!validateInput(input)) {
       setError('올바른 형식으로 입력해주세요 (예: 10101 홍길동)');
       return;
     }
-
     const parts = input.split(' ');
     const studentId = parts[0];
     const studentName = parts.slice(1).join(' ');
 
+    localStorage.setItem(STORAGE_ID_KEY, studentId);
+    localStorage.setItem(STORAGE_NAME_KEY, studentName);
+    setSavedId(studentId);
+    setSavedName(studentName);
     setError('');
     onStartGame(studentId, studentName, diskCount[0]);
   };
 
-  const handleInputChange = (value: string) => {
-    setStudentInfo(value);
-    if (error) setError('');
+  const handleReset = () => {
+    localStorage.removeItem(STORAGE_ID_KEY);
+    localStorage.removeItem(STORAGE_NAME_KEY);
+    setSavedId(null);
+    setSavedName(null);
+    setStudentInfo('');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSubmit();
-    }
+    if (e.key === 'Enter') handleSubmit();
   };
 
   return (
@@ -60,7 +84,18 @@ export function StartScreen({ onStartGame }: StartScreenProps) {
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <div className="w-full max-w-md">
           {/* 헤더 */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-8 relative">
+            {isSavedLogin && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 text-xs"
+                onClick={() => setShowHistory(true)}
+              >
+                <History className="h-3.5 w-3.5 mr-1" />
+                내 활동 기록
+              </Button>
+            )}
             <h1 className="text-4xl font-bold mb-2" data-testid="title">
               하노이타워
             </h1>
@@ -73,29 +108,48 @@ export function StartScreen({ onStartGame }: StartScreenProps) {
           <Card className="mb-6">
             <CardContent className="p-6">
               <div className="space-y-6">
-                {/* 학생 정보 입력 */}
-                <div className="space-y-2">
-                  <Label htmlFor="student-info">학번과 이름</Label>
-                  <Input
-                    id="student-info"
-                    type="text"
-                    placeholder="10101 홍길동"
-                    value={studentInfo}
-                    onChange={(e) => handleInputChange(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    data-testid="input-student-info"
-                    className={error ? 'border-red-500' : ''}
-                  />
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <Info className="h-3 w-3 mr-1" />
-                    5자리 학번 + 공백 + 이름 (한글 또는 영문)
-                  </div>
-                  {error && (
-                    <div className="text-sm text-red-500" data-testid="error-message">
-                      {error}
+                {isSavedLogin ? (
+                  /* 저장된 로그인 - 학번/이름 건너뜀 */
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <UserRound className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">{savedName}</span>
+                        <span className="text-muted-foreground text-xs">({savedId})</span>
+                      </div>
+                      <button
+                        onClick={handleReset}
+                        className="text-xs text-muted-foreground underline hover:text-foreground"
+                      >
+                        변경
+                      </button>
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  /* 최초 로그인 - 학번+이름 입력 */
+                  <div className="space-y-2">
+                    <Label htmlFor="student-info">학번과 이름</Label>
+                    <Input
+                      id="student-info"
+                      type="text"
+                      placeholder="10101 홍길동"
+                      value={studentInfo}
+                      onChange={e => { setStudentInfo(e.target.value); if (error) setError(''); }}
+                      onKeyDown={handleKeyDown}
+                      data-testid="input-student-info"
+                      className={error ? 'border-red-500' : ''}
+                    />
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <Info className="h-3 w-3 mr-1" />
+                      5자리 학번 + 공백 + 이름 (한글 또는 영문)
+                    </div>
+                    {error && (
+                      <div className="text-sm text-red-500" data-testid="error-message">
+                        {error}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* 원판 개수 선택 */}
                 <div className="space-y-3">
@@ -178,6 +232,14 @@ export function StartScreen({ onStartGame }: StartScreenProps) {
           </Card>
         </div>
       </div>
+
+      {savedId && (
+        <ActivityHistoryModal
+          isOpen={showHistory}
+          participantId={savedId}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
     </div>
   );
 }

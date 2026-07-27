@@ -2,19 +2,22 @@ import { GameHeader } from './GameHeader';
 import { GameBoard } from './GameBoard';
 import { WinModal } from './WinModal';
 import { LiveSidebar } from './LiveSidebar';
+import { ReflectionModal } from './ReflectionModal';
 import { useHanoiGame } from '@/hooks/useHanoiGame';
 import { useGameSession } from '@/hooks/useGameSession';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 
 interface GameScreenProps {
   studentId: string;
   studentName: string;
   disks: number;
   onBackToStart: () => void;
+  mode?: 'student' | 'teacher';
 }
 
-export function GameScreen({ studentId, studentName, disks, onBackToStart }: GameScreenProps) {
+export function GameScreen({ studentId, studentName, disks, onBackToStart, mode = 'student' }: GameScreenProps) {
+  const [showReflection, setShowReflection] = useState(false);
   const {
     gameState,
     initializeGame,
@@ -97,13 +100,25 @@ export function GameScreen({ studentId, studentName, disks, onBackToStart }: Gam
           isGameActive={gameState.isGameActive}
         />
         <WinModal
-          isOpen={gameState.completed}
+          isOpen={gameState.completed && !showReflection}
           gameStats={gameStats}
           studentId={studentId}
           studentName={studentName}
           onPlayAgain={restartGame}
           onBackToMenu={onBackToStart}
+          onWriteReflection={mode === 'teacher' ? () => setShowReflection(true) : undefined}
         />
+        {mode === 'teacher' && (
+          <ReflectionModal
+            isOpen={showReflection}
+            studentId={studentId}
+            studentName={studentName}
+            disks={gameState.disks}
+            moves={gameStats.moves}
+            onPlayAgain={() => { setShowReflection(false); restartGame(); }}
+            onBackToMenu={() => { setShowReflection(false); onBackToStart(); }}
+          />
+        )}
       </div>
     </div>
   );

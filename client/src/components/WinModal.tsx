@@ -1,7 +1,7 @@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Trophy } from 'lucide-react';
+import { Trophy, Brain } from 'lucide-react';
 import { GameStats } from '@/types/game';
 import { useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -16,9 +16,10 @@ interface WinModalProps {
   studentName: string;
   onPlayAgain: () => void;
   onBackToMenu: () => void;
+  onWriteReflection?: () => void;
 }
 
-export function WinModal({ isOpen, gameStats, studentId, studentName, onPlayAgain, onBackToMenu }: WinModalProps) {
+export function WinModal({ isOpen, gameStats, studentId, studentName, onPlayAgain, onBackToMenu, onWriteReflection }: WinModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const hasSaved = useRef(false);
@@ -162,17 +163,28 @@ export function WinModal({ isOpen, gameStats, studentId, studentName, onPlayAgai
             </CardContent>
           </Card>
 
+          {onWriteReflection && (
+            <Button
+              variant="outline"
+              onClick={onWriteReflection}
+              className="w-full mb-3"
+            >
+              <Brain className="h-4 w-4 mr-2" />
+              알고리즘 풀이 작성하기
+            </Button>
+          )}
+
           <div className="flex gap-3">
-            <Button 
-              onClick={onPlayAgain} 
+            <Button
+              onClick={onPlayAgain}
               className="flex-1"
               data-testid="button-play-again"
             >
               다시 플레이
             </Button>
-            <Button 
-              variant="secondary" 
-              onClick={onBackToMenu} 
+            <Button
+              variant="secondary"
+              onClick={onBackToMenu}
               className="flex-1"
               data-testid="button-back-menu"
             >

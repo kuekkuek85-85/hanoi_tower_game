@@ -21,3 +21,4 @@ export function getDb() {
 
 export const RECORDS_COLLECTION = 'hanoi_records';
 export const SESSIONS_COLLECTION = 'hanoi_sessions';
+export const REFLECTIONS_COLLECTION = 'hanoi_reflections';
