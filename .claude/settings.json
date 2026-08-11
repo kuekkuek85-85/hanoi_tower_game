@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "codex": {
+      "command": "cmd.exe",
+      "args": ["/C", "C:\\Users\\kuekk\\AppData\\Roaming\\npm\\codex.cmd", "mcp-server"]
+    }
+  }
+}
