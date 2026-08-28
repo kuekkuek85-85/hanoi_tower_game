@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Info, Trophy, Award, Users } from 'lucide-react';
 import { GameScreen } from '@/components/GameScreen';
+import { WelcomeModal } from '@/components/WelcomeModal';
 
 const LS_SCHOOL = 'hanoiTrainingSchool';
 const LS_NAME = 'hanoiTrainingName';
@@ -104,6 +105,7 @@ export default function TrainingPage() {
 
   return (
     <div className="start-screen">
+      <WelcomeModal />
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
