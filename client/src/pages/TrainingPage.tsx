@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { Info, Trophy, Users } from 'lucide-react';
+import { Info, Trophy, Award, Users } from 'lucide-react';
 import { GameScreen } from '@/components/GameScreen';
 
 const LS_SCHOOL = 'hanoiTrainingSchool';
@@ -183,11 +183,20 @@ export default function TrainingPage() {
 
           <Button
             variant="outline"
-            className="w-full"
+            className="w-full mb-3"
             onClick={() => router.push('/training/leaderboard')}
           >
             <Trophy className="h-4 w-4 mr-2" />
             교사 명예의 전당
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="w-full text-muted-foreground text-sm"
+            onClick={() => router.push('/training/awards')}
+          >
+            <Award className="h-4 w-4 mr-2" />
+            교사 시상식
           </Button>
         </div>
       </div>
