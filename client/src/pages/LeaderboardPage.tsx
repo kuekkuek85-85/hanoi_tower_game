@@ -22,7 +22,11 @@ interface SortState {
   direction: SortDirection;
 }
 
-export default function LeaderboardPage() {
+interface LeaderboardPageProps {
+  mode?: 'student' | 'teacher';
+}
+
+export default function LeaderboardPage({ mode }: LeaderboardPageProps = {}) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [diskFilter, setDiskFilter] = useState<string>('all');
@@ -30,9 +34,10 @@ export default function LeaderboardPage() {
   const [sortState, setSortState] = useState<SortState>({ field: 'moves', direction: 'asc' });
 
   const recordsPerPage = 10;
+  const apiUrl = mode ? `/api/records?mode=${mode}` : '/api/records';
 
   const { data: allRecords = [], isLoading, isFetching, isError, refetch } = useQuery<HanoiRecord[]>({
-    queryKey: ['/api/records'],
+    queryKey: [apiUrl],
     refetchOnWindowFocus: false,
     retry: 1,
     placeholderData: (prev) => prev,
@@ -155,7 +160,7 @@ export default function LeaderboardPage() {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => router.push('/')}
+              onClick={() => router.push(mode === 'teacher' ? '/training' : '/')}
               data-testid="button-back-home"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -163,10 +168,10 @@ export default function LeaderboardPage() {
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-2" data-testid="text-page-title">
                 <Trophy className="h-8 w-8 text-yellow-500" />
-                명예의 전당
+                {mode === 'teacher' ? '교사 명예의 전당' : '명예의 전당'}
               </h1>
               <p className="text-muted-foreground" data-testid="text-page-subtitle">
-                하노이타워 게임 기록
+                {mode === 'teacher' ? '교사 연수 게임 기록' : '하노이타워 게임 기록'}
               </p>
             </div>
           </div>
@@ -249,7 +254,7 @@ export default function LeaderboardPage() {
                         className="h-auto p-0 font-semibold"
                         data-testid="button-sort-name"
                       >
-                        학생 정보 {getSortIcon('studentName')}
+                        {mode === 'teacher' ? '교사 정보' : '학생 정보'} {getSortIcon('studentName')}
                       </Button>
                     </TableHead>
                     <TableHead>

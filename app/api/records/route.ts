@@ -14,14 +14,18 @@ function docToRecord(id: string, data: FirebaseFirestore.DocumentData): HanoiRec
     disks: data.disks,
     moves: data.moves,
     seconds: data.seconds,
+    mode: (data.mode as 'student' | 'teacher') ?? 'student',
     createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
   };
 }
+
+const isStudentId = (id: string) => /^\d{5}$/.test(id);
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const limit = Math.min(Math.max(parseInt(searchParams.get('limit') ?? '') || 500, 1), 500);
+    const modeFilter = searchParams.get('mode');
 
     const db = getDb();
     const snapshot = await db
@@ -29,7 +33,13 @@ export async function GET(request: NextRequest) {
       .orderBy('createdAt', 'desc')
       .limit(limit)
       .get();
-    const records = snapshot.docs.map(doc => docToRecord(doc.id, doc.data()));
+    let records = snapshot.docs.map(doc => docToRecord(doc.id, doc.data()));
+
+    if (modeFilter === 'teacher') {
+      records = records.filter(r => r.mode === 'teacher' || !isStudentId(r.studentId));
+    } else if (modeFilter === 'student') {
+      records = records.filter(r => r.mode !== 'teacher' && isStudentId(r.studentId));
+    }
 
     return NextResponse.json(records);
   } catch (err) {

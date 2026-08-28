@@ -14,11 +14,12 @@ interface WinModalProps {
   gameStats: GameStats;
   studentId: string;
   studentName: string;
+  mode?: 'student' | 'teacher';
   onPlayAgain: () => void;
   onBackToMenu: () => void;
 }
 
-export function WinModal({ isOpen, gameStats, studentId, studentName, onPlayAgain, onBackToMenu }: WinModalProps) {
+export function WinModal({ isOpen, gameStats, studentId, studentName, mode = 'student', onPlayAgain, onBackToMenu }: WinModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const hasSaved = useRef(false);
@@ -60,6 +61,7 @@ export function WinModal({ isOpen, gameStats, studentId, studentName, onPlayAgai
         disks: gameStats.disks,
         moves: gameStats.moves,
         seconds: gameStats.timeElapsed,
+        mode,
       });
     }
 

@@ -11,10 +11,11 @@ interface GameScreenProps {
   studentId: string;
   studentName: string;
   disks: number;
+  mode?: 'student' | 'teacher';
   onBackToStart: () => void;
 }
 
-export function GameScreen({ studentId, studentName, disks, onBackToStart }: GameScreenProps) {
+export function GameScreen({ studentId, studentName, disks, mode = 'student', onBackToStart }: GameScreenProps) {
   const {
     gameState,
     initializeGame,
@@ -101,6 +102,7 @@ export function GameScreen({ studentId, studentName, disks, onBackToStart }: Gam
           gameStats={gameStats}
           studentId={studentId}
           studentName={studentName}
+          mode={mode}
           onPlayAgain={restartGame}
           onBackToMenu={onBackToStart}
         />
