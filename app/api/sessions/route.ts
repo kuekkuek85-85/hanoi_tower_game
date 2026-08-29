@@ -15,7 +15,7 @@ export async function GET() {
       .where('updatedAt', '>', cutoff)
       .get();
 
-    const sessions = snapshot.docs.map(doc => {
+    const allSessions = snapshot.docs.map(doc => {
       const d = doc.data();
       return {
         id: doc.id,
@@ -28,6 +28,16 @@ export async function GET() {
         updatedAt: d.updatedAt instanceof Timestamp ? d.updatedAt.toMillis() : Number(d.updatedAt),
       };
     });
+
+    // studentId 기준 중복 제거 — 가장 최근 updatedAt 세션만 유지
+    const latestByStudent = new Map<string, typeof allSessions[0]>();
+    for (const s of allSessions) {
+      const existing = latestByStudent.get(s.studentId);
+      if (!existing || s.updatedAt > existing.updatedAt) {
+        latestByStudent.set(s.studentId, s);
+      }
+    }
+    const sessions = Array.from(latestByStudent.values());
 
     return NextResponse.json(sessions);
   } catch {
