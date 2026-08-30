@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Trophy } from 'lucide-react';
 import { GameStats } from '@/types/game';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type MutableRefObject } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -15,11 +15,12 @@ interface WinModalProps {
   studentId: string;
   studentName: string;
   mode?: 'student' | 'teacher';
+  sessionIdRef?: MutableRefObject<string | null>;
   onPlayAgain: () => void;
   onBackToMenu: () => void;
 }
 
-export function WinModal({ isOpen, gameStats, studentId, studentName, mode = 'student', onPlayAgain, onBackToMenu }: WinModalProps) {
+export function WinModal({ isOpen, gameStats, studentId, studentName, mode = 'student', sessionIdRef, onPlayAgain, onBackToMenu }: WinModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const hasSaved = useRef(false);
@@ -62,6 +63,7 @@ export function WinModal({ isOpen, gameStats, studentId, studentName, mode = 'st
         moves: gameStats.moves,
         seconds: gameStats.timeElapsed,
         mode,
+        sessionId: sessionIdRef?.current ?? undefined,
       });
     }
 

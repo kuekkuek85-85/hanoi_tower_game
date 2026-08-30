@@ -29,8 +29,8 @@ export function GameScreen({ studentId, studentName, disks, mode = 'student', on
 
   const { toast } = useToast();
 
-  // 실시간 세션 추적
-  useGameSession(
+  // 실시간 세션 추적 (sessionIdRef 반환 — 기록 제출 검증에 사용)
+  const sessionIdRef = useGameSession(
     studentId,
     studentName,
     gameState.disks,
@@ -103,6 +103,7 @@ export function GameScreen({ studentId, studentName, disks, mode = 'student', on
           studentId={studentId}
           studentName={studentName}
           mode={mode}
+          sessionIdRef={sessionIdRef}
           onPlayAgain={restartGame}
           onBackToMenu={onBackToStart}
         />

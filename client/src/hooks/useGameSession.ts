@@ -6,12 +6,11 @@ export function useGameSession(
   disks: number,
   moves: number,
   completed: boolean,
-  startedAt: number | null, // 새 게임/재시작마다 바뀌어 세션 재생성 트리거
-) {
+  startedAt: number | null,
+): React.MutableRefObject<string | null> {
   const sessionIdRef = useRef<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 게임 시작(또는 재시작) 시 새 세션 생성
   useEffect(() => {
     if (!startedAt || !studentId) return;
     sessionIdRef.current = null;
@@ -27,7 +26,6 @@ export function useGameSession(
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startedAt]);
 
-  // 이동수 변경 시 세션 업데이트 (완료 즉시, 그 외 2초 debounce)
   useEffect(() => {
     if (!sessionIdRef.current) return;
 
@@ -55,4 +53,6 @@ export function useGameSession(
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [moves, completed]);
+
+  return sessionIdRef;
 }

@@ -8,6 +8,7 @@ export const insertHanoiRecordSchema = z.object({
   moves: z.number().int().min(1),
   seconds: z.number().int().min(1),
   mode: z.enum(['student', 'teacher']).optional().default('student'),
+  sessionId: z.string().optional(),
 });
 
 export type InsertHanoiRecord = z.infer<typeof insertHanoiRecordSchema>;
